@@ -68,8 +68,8 @@ export function findCity(text: string): City | undefined {
 }
 
 /** Hint for a name that is not one city: nothing found, or which ones fit. */
-export function matchHint(hits: City[]): string {
-  if (!hits.length) return 'Kota tidak ditemukan. Coba nama lain, atau pakai Lokasi saya.';
+export function matchHint(hits: City[], locate = true): string {
+  if (!hits.length) return `Kota tidak ditemukan. Coba nama lain${locate ? ', atau pakai Lokasi saya' : ''}.`;
   const shown = hits.slice(0, 3).map((c) => titleCase(c.name)).join(', ');
   return `${hits.length} kota cocok: ${shown}${hits.length > 3 ? ', dll.' : ''} — pilih dari daftar.`;
 }

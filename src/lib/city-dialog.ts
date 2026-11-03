@@ -35,6 +35,7 @@ export function initCityDialog({ current, pick }: Options) {
   const announceEl = document.getElementById('city-announce')!;
   const form = dialog.querySelector('form')!;
   const hint = document.getElementById('city-hint')!;
+  const locateButton = document.getElementById('dlg-locate');
   let opener: HTMLElement | null = null;
 
   /** The status line under the field; an error reads in ink at 600, the helper above stays muted. */
@@ -70,7 +71,7 @@ export function initCityDialog({ current, pick }: Options) {
   function pickTyped() {
     const hits = matchCities(input.value);
     if (hits.length === 1) return choose(hits[0]);
-    setHint(matchHint(hits), true);
+    setHint(matchHint(hits, !!locateButton), true);
     setInvalid(true);
     input.focus();
   }
@@ -85,7 +86,7 @@ export function initCityDialog({ current, pick }: Options) {
     setHint('');
     setInvalid(false);
   });
-  document.getElementById('dlg-locate')!.addEventListener('click', async () => {
+  locateButton?.addEventListener('click', async () => {
     setHint('Mencari lokasi…');
     try {
       const { city, km } = await locateNearest();

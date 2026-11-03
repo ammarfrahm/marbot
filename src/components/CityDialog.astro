@@ -2,7 +2,8 @@
 import { CITIES, cityLabel } from '../lib/cities';
 import LocateButton from './LocateButton.astro';
 
-const { title = 'Ubah kota' } = Astro.props;
+/** `locate` adds the nearest-city button; Kiblat has its own exact-GPS button, so it leaves this one out. */
+const { title = 'Ubah kota', locate = true } = Astro.props;
 ---
 
 <dialog id="settings" aria-labelledby="settings-title">
@@ -17,7 +18,7 @@ const { title = 'Ubah kota' } = Astro.props;
     </label>
     <p id="city-help">Ketik nama kab/kota, lalu pilih dari daftar.</p>
     <p id="city-hint" role="status"></p>
-    <LocateButton id="dlg-locate" label="Lokasi saya" />
+    {locate && <LocateButton id="dlg-locate" label="Lokasi saya" />}
     <slot />
     <button type="submit" id="dlg-done">Selesai</button>
   </form>
