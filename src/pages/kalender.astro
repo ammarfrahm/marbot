@@ -227,14 +227,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #this-month[hidden] { display: none; }
   #this-month { background: var(--accent-soft); color: var(--accent); }
 
-  /* Wide screens: the month grid leads and the upcoming days follow it. */
   @media (min-width: 60rem) {
-    :global(main) { display: flex; flex-direction: column; }
-    .month { order: -1; margin-top: 0; }
-    .upcoming { margin-top: 1.5rem; }
     #grid :global(td) { height: 4rem; }
-    /* The card sits above the upcoming days here, so a month's marked days must not push them down:
-       hold the height of the most a month has, two days with a "sidang isbat" note on the first. */
-    #month-marked { min-height: 11.2rem; }
   }
 </style>
