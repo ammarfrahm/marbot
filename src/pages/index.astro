@@ -37,7 +37,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
       <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
 
-      <ol id="times">
+      <h2 id="list-title">Jadwal hari ini</h2>
+      <ol id="times" aria-labelledby="list-title">
         {
           TIMES.map((t) => (
             <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
@@ -189,13 +190,19 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
           ` · ${cityClock(now, city.utcOffset)} ${zone}`;
 
-        const todays = days.find((d) => d.date === today);
         const next = nextPrayer(days, now, city.utcOffset);
+        // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
+        const listDate = next?.date ?? today;
+        const listed = days.find((d) => d.date === listDate);
+        setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
         for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
           const t = li.dataset.time as TimeName;
-          li.querySelector('time')!.textContent = todays?.[t] ?? '--:--';
-          li.classList.toggle('next', next?.date === today && next.name === t);
-          li.classList.toggle('past', !!todays && toInstant(today, todays[t], city.utcOffset) <= now);
+          li.querySelector('time')!.textContent = listed?.[t] ?? '--:--';
+          const isNext = next?.name === t;
+          li.classList.toggle('next', isNext);
+          if (isNext) li.setAttribute('aria-current', 'time');
+          else li.removeAttribute('aria-current');
+          li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
         }
 
         if (!next) {
@@ -273,7 +280,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         color-scheme: light dark;
         --bg: #f5efe4;
         --ink: #2b2118;
-        --muted: #7d6f60;
+        --muted: #6b5e50;
         --line: #e2d7c5;
         --accent: #8f3f12;
         --accent-soft: #ead6c2;
@@ -318,6 +325,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         font-variant-numeric: tabular-nums;
       }
       #next-at { color: var(--muted); }
+      #list-title { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 400; color: var(--muted); text-align: center; }
       #times { list-style: none; padding: 0; margin: 0 0 2rem; border-top: 1px solid var(--line); }
       #times li {
         display: flex;
@@ -328,7 +336,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         font-variant-numeric: tabular-nums;
       }
       #times li.minor { font-size: 0.95rem; color: var(--muted); }
-      #times li.past { opacity: 0.45; }
+      #times li.past { color: var(--muted); }
       #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 650; border-radius: 0.4rem; }
       #settings summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.5rem; }
       #settings form { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
