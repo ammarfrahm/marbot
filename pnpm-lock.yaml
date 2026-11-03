@@ -18,6 +18,9 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.12
         version: 0.9.12(@emnapi/runtime@1.11.3)(prettier@3.9.10)(typescript@6.0.3)
+      astronomy-engine:
+        specifier: 2.1.19
+        version: 2.1.19
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -938,6 +941,9 @@ packages:
     peerDependenciesMeta:
       '@astrojs/markdown-remark':
         optional: true
+
+  astronomy-engine@2.1.19:
+    resolution: {integrity: sha512-8yWKNf7UeNbH458h3sAJ6ZgAjE5jTXp/mNNRFoC20j2SHwZIjAQeEsBB2Q3uCFRaTCCJRv33K2XhkhZQMXoX6w==}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -2780,6 +2786,8 @@ snapshots:
       - tsx
       - uploadthing
       - yaml
+
+  astronomy-engine@2.1.19: {}
 
   axobject-query@4.1.0: {}
 
