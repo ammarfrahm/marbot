@@ -38,7 +38,10 @@ import PanelBoot from '../components/PanelBoot.astro';
 
     <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
 
-    <p id="source-note">&nbsp;</p>
+    <div id="foot">
+      <p id="source-note">&nbsp;</p>
+      <button type="button" id="share">Bagikan</button>
+    </div>
 
     <CityDialog title="Kota & sumber jadwal">
       <label>
@@ -335,6 +338,18 @@ import PanelBoot from '../components/PanelBoot.astro';
     });
     addEventListener('online', () => (loadFailed || partial) && refresh());
     $('status-action').addEventListener('click', () => statusAction?.());
+    $('share').addEventListener('click', async () => {
+      const url = `${location.origin}${location.pathname}?kota=${city.id}`;
+      try {
+        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${titleCase(city.name)}`, url });
+        else {
+          await navigator.clipboard.writeText(url);
+          setStatus('Tautan disalin.');
+        }
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') setStatus('Tautan tidak bisa dibagikan.');
+      }
+    });
 
     $('city-name').textContent = titleCase(city.name);
     sourceSelect.value = preferred;
@@ -387,9 +402,11 @@ import PanelBoot from '../components/PanelBoot.astro';
       background: var(--gold);
     }
     #list-title { margin-top: 0; }
-    #source-note { margin: 0.25rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
+    #foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 1rem; margin: 0.25rem 0.25rem 0; }
+    #source-note { margin: 0; flex: 1 1 auto; color: var(--muted); font-size: var(--fs-sm); }
     #status { margin: 0.75rem 0.25rem 0; min-height: 3em; color: var(--muted); font-size: var(--fs-sm); }
     @media (min-width: 60rem) { #status { min-height: 1.5em; } } /* the column is wide enough for one line; phones keep room for two */
+    #share { width: auto; margin: -0.75rem -0.25rem -0.75rem 0; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
     #status button { width: auto; margin: -0.75rem 0 -0.75rem -0.25rem; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
   </style>
 </Base>
