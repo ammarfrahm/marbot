@@ -90,6 +90,8 @@ const at = (deg: number, r: number) => {
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
   import { store, storeKey } from '../lib/store';
+  import { setText } from '../lib/dom';
+  import { geoReason } from '../lib/geo';
   import { initCityDialog } from '../lib/city-dialog';
 
   const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
@@ -97,12 +99,6 @@ const at = (deg: number, r: number) => {
   const dial = $<SVGGElement>('dial');
   const ALIGNED_DEG = 3;
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
-
-  /** Writing identical text still makes screen readers and layout work; skip it. */
-  const setText = (id: string, text: string) => {
-    const node = $(id);
-    if (node.textContent !== text) node.textContent = text;
-  };
 
   let city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
@@ -208,8 +204,7 @@ const at = (deg: number, r: number) => {
         setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
       },
       (e) => {
-        const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
-        $('hint').textContent = `${why}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
+        $('hint').textContent = `${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
       },
       { enableHighAccuracy: true, timeout: 15_000 },
     );

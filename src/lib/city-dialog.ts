@@ -1,3 +1,4 @@
+import { geoReason } from './geo';
 import { cityLabel, matchCities, matchHint, nearestCity, titleCase, type City } from './cities';
 
 /** The nearest kab/kota to the device; rejects with a short reason ("Izin lokasi ditolak"). */
@@ -6,7 +7,7 @@ export function locateNearest(): Promise<{ city: City; km: number }> {
     if (!('geolocation' in navigator)) return reject(new Error('Browser ini tidak mendukung lokasi'));
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => resolve(nearestCity(coords.latitude, coords.longitude)),
-      (e) => reject(new Error({ 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia')),
+      (e) => reject(new Error(geoReason(e.code))),
       { timeout: 10_000, maximumAge: 3_600_000 },
     );
   });

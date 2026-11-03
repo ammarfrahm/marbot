@@ -88,3 +88,6 @@ export function parseCachedMonth(raw: string): { fetched: number; days: DaySched
   if (Array.isArray(v?.days)) return { fetched: Number(v.fetched) || 0, days: v.days };
   throw new Error('bad cached month');
 }
+
+/** "subuh" → "Subuh" */
+export const capitalise = (t: string) => t[0].toUpperCase() + t.slice(1);
