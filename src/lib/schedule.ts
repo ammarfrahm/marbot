@@ -91,3 +91,7 @@ export function parseCachedMonth(raw: string): { fetched: number; days: DaySched
 
 /** "subuh" → "Subuh" */
 export const capitalise = (t: string) => t[0].toUpperCase() + t.slice(1);
+
+/** The days to show while city `to` loads: those held for it when going back to a city just left, else none, so old times never sit under a new name. */
+export const daysWhileLoading = (held: { cityId: string; days: DaySchedule[] } | undefined, to: string): DaySchedule[] =>
+  held?.cityId === to ? held.days : [];

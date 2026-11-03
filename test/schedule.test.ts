@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, type DaySchedule } from '../src/lib/schedule';
+import { cityDate, daysWhileLoading, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
   date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
@@ -124,4 +124,14 @@ describe('parseCachedMonth', () => {
     expect(() => parseCachedMonth('{"x":1}')).toThrow();
     expect(() => parseCachedMonth('not json')).toThrow();
   });
+});
+
+describe('daysWhileLoading', () => {
+  const days = [day('2026-11-03')];
+  const held = { cityId: '1301', days };
+  it('clears the days when another city loads', () => {
+    expect(daysWhileLoading(held, '0101')).toEqual([]);
+    expect(daysWhileLoading(undefined, '0101')).toEqual([]);
+  });
+  it('restores the held days when going back to that city', () => expect(daysWhileLoading(held, '1301')).toBe(days));
 });

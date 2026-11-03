@@ -54,7 +54,7 @@ import PanelBoot from '../components/PanelBoot.astro';
   <script>
     import { cityById, DEFAULT_CITY_ID, offerLinked, titleCase, type City } from '../lib/cities';
     import {
-      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, capitalise, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName, type UtcOffset,
+      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, capitalise, daysWhileLoading, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName, type UtcOffset,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
@@ -199,9 +199,10 @@ import PanelBoot from '../components/PanelBoot.astro';
         loadFailed = true;
         const saved = savedCity();
         if (!navigator.onLine && saved && saved.id !== city.id) {
+          const heldNow = left;
           setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
             label: `Kembali ke ${titleCase(saved.name)}`,
-            run: () => setCity(saved),
+            run: () => setCity(saved, '', undefined, heldNow),
           });
         } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -282,15 +283,23 @@ import PanelBoot from '../components/PanelBoot.astro';
       else setStatus('');
     }
 
-    function setCity(c: City, note = '', back?: City) {
+    /** The days held for the city we just left: a way back shows them at once; any other city shows loading, never these. */
+    let left: { cityId: string; days: DaySchedule[] } = { cityId: '', days: [] };
+
+    function setCity(c: City, note = '', back?: City, held?: typeof left) {
+      left = { cityId: city.id, days };
+      days = daysWhileLoading(held, c.id);
       city = c;
       chosen = true;
       cityNote = note;
-      cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back) };
+      const heldNow = left;
+      cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back, '', undefined, heldNow) };
       $('city-name').textContent = titleCase(c.name);
       toSave = c.id;
       history.replaceState(null, '', `?kota=${c.id}`);
-      refresh();
+      quietStatus();
+      refresh(); // sets loadedFor, so the tick below paints the loading state
+      tick();
     }
 
     function locate() {
