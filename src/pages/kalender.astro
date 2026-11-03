@@ -199,7 +199,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #upcoming :global(li:first-child .when) { color: var(--ink); } /* muted fails 4.5:1 on the soft accent */
   :global(.left) { font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  .month { margin-top: 1.5rem; padding: 1rem min(0.75rem, 3vw); }
+  .month { margin-top: 1.5rem; padding: 1rem min(0.75rem, 3vw); container-type: inline-size; }
   .month-head { display: grid; grid-template-columns: min(2.75rem, 14vw) minmax(0, 1fr) min(2.75rem, 14vw); align-items: center; text-align: center; margin-bottom: 0.75rem; }
   .month-head button:not(.pill) { align-self: start; display: grid; place-items: center; height: 2.75rem; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); }
   @media (hover: hover) { .month-head button:hover:not(:disabled, .pill) { background: var(--bg); filter: none; } }
@@ -224,6 +224,14 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #month-marked :global(.what strong) { font-size: var(--fs-md); }
   #this-month[hidden] { display: none; }
   #this-month { grid-column: 1 / -1; justify-self: center; max-width: 100%; margin-top: 0.5rem; text-wrap: balance; background: var(--accent-soft); color: var(--accent); }
+
+  /* Large text in a narrow card: the title takes the full row, the arrows sit under it with the pill between. em here is the card's own font size, so it follows the text scale. */
+  @container (max-width: 16em) {
+    .month-head .month-title { grid-column: 1 / -1; grid-row: 1; }
+    #prev { grid-column: 1; grid-row: 2; }
+    #next { grid-column: 3; grid-row: 2; }
+    #this-month { grid-column: 2; grid-row: 2; align-self: center; margin-top: 0; padding-inline: 0.5rem; line-height: 1.25; }
+  }
 
   @media (min-width: 60rem) {
     #grid :global(td) { height: 4rem; }
