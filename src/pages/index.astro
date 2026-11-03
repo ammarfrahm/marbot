@@ -28,7 +28,7 @@ import CityDialog from '../components/CityDialog.astro';
         TIMES.map((t) => (
           <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
             <span>{capitalise(t)}</span>
-            <time>--:--</time>
+            <time>‒‒:‒‒</time>
           </li>
         ))
       }
@@ -234,7 +234,7 @@ import CityDialog from '../components/CityDialog.astro';
       for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
         const t = li.dataset.time as TimeName;
         const cell = li.querySelector('time')!;
-        const hhmm = listed?.[t] ?? '--:--';
+        const hhmm = listed?.[t] ?? '‒‒:‒‒';
         const iso = listed ? `${listDate}T${hhmm}` : '';
         if (cell.textContent !== hhmm || (cell.getAttribute('datetime') ?? '') !== iso) {
           cell.textContent = hhmm;
