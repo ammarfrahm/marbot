@@ -93,9 +93,10 @@ import PanelBoot from '../components/PanelBoot.astro';
 
 
     /** The digits, plus the word that makes them "left" rather than a clock time. */
-    const setCountdown = (text: string, remaining = false) => {
+    const setCountdown = (text: string, remaining = false, placeholder = false) => {
       setText('cd-left', text);
-      $('cd-lagi').hidden = !remaining;
+      $('cd-lagi').hidden = !remaining && !placeholder;
+      $('cd-lagi').style.visibility = remaining ? '' : 'hidden'; // placeholder keeps its room, so the line does not reflow
     };
 
     let statusAction: (() => void) | null = null;
@@ -268,7 +269,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       }
       if (!next) {
         setText('next-name', '…');
-        setCountdown('‒‒:‒‒:‒‒', true);
+        setCountdown('‒‒:‒‒:‒‒', false, true);
         setText('next-at', loadFailed ? 'Belum bisa dimuat' : partial ? 'Besok belum tersedia' : `pukul ‒‒:‒‒ ${zone}`);
         document.title = 'Jadwal Sholat · Marbot';
         return;
