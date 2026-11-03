@@ -82,14 +82,20 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     return node;
   }
 
-  function dayItem(d: HariPenting, withCountdown: boolean) {
+  function dayItem(d: HariPenting, withCountdown: boolean, note = false) {
     const li = document.createElement('li');
     const what = el('div', 'what', '');
     what.append(el('strong', '', d.name), el('span', 'when', formatHijri(d.hijri)), el('span', 'when', greg(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })));
-    if (d.isbat && d.date > today) what.append(el('span', 'when', 'Menunggu sidang isbat'));
+    if (note) what.append(el('span', 'when', 'Menunggu sidang isbat'));
     li.append(what);
     if (withCountdown) li.append(el('span', 'left', inDays(daysBetween(today, d.date))));
     return li;
+  }
+
+  /** "Menunggu sidang isbat" is said once per list, on its first pending day. */
+  function withNote(days: HariPenting[], withCountdown: boolean) {
+    const first = days.find((d) => d.isbat && d.date > today);
+    return days.map((d) => dayItem(d, withCountdown, d === first));
   }
 
   function renderMonth(m: HijriMonth) {
@@ -133,7 +139,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       rows.push(row);
     }
     body.replaceChildren(...rows);
-    $('month-marked').replaceChildren(...[...marked.values()].map((d) => dayItem(d, false)));
+    $('month-marked').replaceChildren(...withNote([...marked.values()], false));
   }
 
   function render() {
@@ -146,7 +152,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       return;
     }
     $('hijri-today').textContent = formatHijri(hijri);
-    $('upcoming').replaceChildren(...upcomingDays(today, 4).map((d) => dayItem(d, true)));
+    $('upcoming').replaceChildren(...withNote(upcomingDays(today, 4), true));
     renderMonth(month);
   }
 
