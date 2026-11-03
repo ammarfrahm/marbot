@@ -6,44 +6,27 @@ import Base from '../layouts/Base.astro';
 
 const regions = Object.groupBy(CITIES, (c) => c.region);
 const label = (t: string) => t[0].toUpperCase() + t.slice(1);
-
-// The drum's pegs, clockwise from the top; they light up as the next prayer nears.
-const PEGS = Array.from({ length: 36 }, (_, i) => {
-  const a = (i / 36) * 2 * Math.PI - Math.PI / 2;
-  return { x: +(120 + 107 * Math.cos(a)).toFixed(2), y: +(120 + 107 * Math.sin(a)).toFixed(2) };
-});
 ---
 
 <Base title="Marbot · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
-        <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
+        <button type="button" id="change-city" class="pill" aria-label="Ubah kota">Ubah</button>
       </div>
       <p id="today">&nbsp;</p>
-  <p id="hijri"></p>
+      <p id="hijri"></p>
+      <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
+        <p id="next-name">…</p>
+        <p id="countdown" role="timer" aria-live="off">--:--:--</p>
+        <p id="next-at">Memuat jadwal…</p>
+      </section>
     </Fragment>
-
-    <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
-      <div class="drum">
-        <svg viewBox="0 0 240 240" aria-hidden="true">
-          <circle class="rim" cx="120" cy="120" r="119" />
-          <circle class="skin" cx="120" cy="120" r="97" />
-          <circle class="skin-ring" cx="120" cy="120" r="89" />
-          <g id="pegs">{PEGS.map((p) => <circle cx={p.x} cy={p.y} r="3.2" />)}</g>
-        </svg>
-        <div class="face">
-          <p id="next-name">…</p>
-          <p id="countdown" role="timer" aria-live="off">--:--:--</p>
-          <p id="next-at">Memuat jadwal…</p>
-        </div>
-      </div>
-    </section>
 
     <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
 
-    <h2 id="list-title">Jadwal hari ini</h2>
-    <ol id="times" aria-labelledby="list-title">
+    <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
+    <ol id="times" class="card" aria-labelledby="list-title">
       {
         TIMES.map((t) => (
           <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
@@ -54,7 +37,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
       }
     </ol>
 
-    <details id="settings">
+    <details id="settings" class="card">
       <summary>Ubah kota atau sumber jadwal</summary>
       <form onsubmit="return false">
         <label>
@@ -186,16 +169,6 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
 
     const SOON_MS = 10 * 60_000;
     const ARRIVED_MS = 10 * 60_000;
-    const pegs = [...document.querySelectorAll<SVGCircleElement>('#pegs circle')];
-    let litPegs = -1;
-    /** Light the share of pegs that matches the time already passed since the last prayer. */
-    function lightPegs(fraction: number) {
-      const lit = Math.floor(Math.min(1, Math.max(0, fraction)) * pegs.length);
-      if (lit === litPegs) return;
-      litPegs = lit;
-      pegs.forEach((peg, i) => peg.classList.toggle('lit', i < lit));
-    }
-
     function tick() {
       const now = Date.now();
       const zone = ZONE_LABEL[city.utcOffset];
@@ -205,8 +178,8 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
       $('today').textContent =
         `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
         ` · ${cityClock(now, city.utcOffset)} ${zone}`;
-    const hijri = toHijri(today);
-    setText('hijri', hijri ? formatHijri(hijri) : '');
+      const hijri = toHijri(today);
+      setText('hijri', hijri ? formatHijri(hijri) : '');
 
       const next = nextPrayer(days, now, city.utcOffset);
       const last = lastPrayer(days, now, city.utcOffset);
@@ -230,7 +203,6 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
       }
 
-      lightPegs(arrived ? 1 : last && next ? (now - last.at) / (next.at - last.at) : 0);
       if (arrived) {
         setText('next-name', label(arrived.name));
         setText('countdown', 'Sudah masuk');
@@ -309,65 +281,56 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
   </script>
 
   <style is:global>
-    .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
-    h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
-    #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
-    #today, #hijri { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-    #hijri { margin: 0; }
-    .hero { margin: 2rem 0 1.5rem; }
-    .hero p { margin: 0; }
-    .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
-    .drum > * { grid-area: 1 / 1; }
-    .drum svg { width: 100%; height: 100%; }
-    .rim { fill: var(--rim); }
-    .skin { fill: var(--skin); }
-    .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
-    #pegs circle { fill: var(--peg); transition: fill 250ms ease-out; }
-    #pegs circle.lit { fill: var(--peg-on); }
-    .skin { transition: fill 250ms ease-out; transform-box: fill-box; transform-origin: center; }
-    [data-state='soon'] #countdown { color: var(--accent); }
-    [data-state='now'] .skin { fill: var(--skin-now); animation: strike 700ms cubic-bezier(0.16, 1, 0.3, 1) 3; }
-    [data-state='now'] #countdown { font-size: clamp(2rem, 9vw, 2.75rem); }
-    [data-state='now'] #next-at { color: var(--ink); } /* muted fails 4.5:1 on the lit skin */
-    /* The drum is struck three times when a prayer arrives. */
-    @keyframes strike {
-      from { transform: scale(1.03); }
-      to { transform: scale(1); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      [data-state='now'] .skin { animation: none; }
-    }
-    .face { text-align: center; }
-    #next-name { font-size: 1.35rem; font-weight: 600; }
+    .place { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+    #today, #hijri { color: var(--on-panel-muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    #today { margin-top: 0.35rem; }
+    .hero { margin-top: 1.75rem; }
+    #next-name { font-size: 1.25rem; font-weight: 600; }
     #countdown {
-      font-size: clamp(2.75rem, 13vw, 3.5rem);
-      font-weight: 650;
-      line-height: 1.05;
+      font-size: clamp(3rem, 15vw, 3.75rem);
+      font-weight: 300;
+      line-height: 1.1;
       letter-spacing: -0.02em;
       font-variant-numeric: tabular-nums;
     }
-    #next-at { color: var(--muted); }
-    #list-title { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 400; color: var(--muted); text-align: center; }
-    #times { list-style: none; padding: 0; margin: 0 0 2rem; border-top: 1px solid var(--line); }
+    #next-at { color: var(--on-panel-muted); font-variant-numeric: tabular-nums; }
+    [data-state='soon'] #countdown { font-weight: 400; }
+    [data-state='soon'] #next-at { color: var(--on-panel); }
+    [data-state='now'] #countdown { font-size: clamp(2.25rem, 10vw, 2.75rem); font-weight: 400; }
+    #times { list-style: none; margin: 0; padding: 0.35rem; }
     #times li {
+      position: relative;
       display: flex;
       justify-content: space-between;
-      padding: 0.7rem 0.9rem;
-      border-bottom: 1px solid var(--line);
-      font-size: 1.15rem;
+      padding: 0.8rem 0.9rem 0.8rem 1.6rem;
+      font-size: 1.1rem;
       font-variant-numeric: tabular-nums;
     }
+    #times li + li { box-shadow: 0 -1px 0 var(--line); }
     #times li.minor { font-size: 0.95rem; color: var(--muted); }
     #times li.past { color: var(--muted); }
-    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 650; border-radius: 0.4rem; }
-    #settings summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.5rem; }
-    #settings form { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-radius: 0.65rem; box-shadow: none; }
+    #times li.next + li { box-shadow: none; }
+    #times li.next::before {
+      content: '';
+      position: absolute;
+      left: 0.7rem;
+      top: 50%;
+      width: 0.4rem;
+      height: 0.4rem;
+      margin-top: -0.2rem;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+    #settings { margin-top: 1.5rem; }
+    #settings summary { cursor: pointer; padding: 0.95rem 1rem; font-weight: 600; border-radius: 1rem; }
+    #settings summary::marker { color: var(--muted); }
+    #settings form { display: grid; gap: 0.75rem; padding: 0 1rem 1rem; }
     #settings label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
     #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
     #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
     #locate .dot { fill: currentColor; stroke: none; }
-    #settings summary::marker { color: var(--accent); }
-    #status { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
+    #status { margin: 0 0.25rem 0.5rem; color: var(--muted); font-size: 0.9rem; }
     #status button { width: auto; margin-left: 0.25rem; padding: 0.3rem 0.8rem; font-size: 0.9rem; }
   </style>
 </Base>

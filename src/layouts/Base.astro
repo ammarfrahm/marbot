@@ -1,6 +1,4 @@
 ---
-import '@fontsource-variable/familjen-grotesk/wght.css';
-
 type Tab = 'jadwal' | 'kiblat' | 'kalender';
 type Props = { title: string; description: string; tab: Tab };
 const { title, description, tab } = Astro.props;
@@ -20,18 +18,26 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#16110c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#173f32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
   <body>
-    <main>
-      <header>
-        <p class="brand"><img src="/favicon.svg" alt="" width="20" height="20" />Marbot</p>
+    <header class="panel">
+      <div class="panel-inner">
+        <p class="brand">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <mask id="brand-cut"><rect width="32" height="32" fill="#fff" /><circle cx="19.5" cy="12.5" r="8" /></mask>
+            <circle cx="15" cy="17" r="10.5" fill="currentColor" mask="url(#brand-cut)" />
+            <circle cx="23.5" cy="9" r="2.3" class="star" />
+          </svg>
+          Marbot
+        </p>
         <slot name="header" />
-      </header>
+      </div>
+    </header>
+    <main>
       <slot />
     </main>
     <nav class="tabs" aria-label="Menu">
@@ -51,31 +57,31 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
     <style is:global>
       :root {
         color-scheme: light dark;
-        --bg: #f5efe4;
-        --ink: #2b2118;
-        --muted: #6b5e50;
-        --line: #e2d7c5;
-        --accent: #8f3f12;
-        --accent-soft: #ead6c2;
-        --skin: #efe2c8;
-        --rim: #6f2e17;
-        --peg: #9a5a37;
-        --peg-on: #f2c46b;
-        --skin-now: #f3d79a;
+        --bg: #f4f4f1;
+        --card: #ffffff;
+        --ink: #16201c;
+        --muted: #5d6662;
+        --line: #e6e6e1;
+        --accent: #173f32;
+        --accent-soft: #e6f0ea;
+        --gold: #c8a24a;
+        --panel: #173f32;
+        --on-panel: #ffffff;
+        --on-panel-muted: #c3d3cb;
+        --shadow: 0 1px 2px rgb(22 32 28 / 0.06), 0 2px 8px rgb(22 32 28 / 0.04);
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #16110c;
-          --ink: #f0e7d9;
-          --muted: #a2927f;
-          --line: #33291f;
-          --accent: #e8955b;
-          --accent-soft: #3a2616;
-          --skin: #2a1f15;
-          --rim: #5a2a16;
-          --peg: #7a4a2c;
-          --peg-on: #f0b660;
-          --skin-now: #4a3216;
+          --bg: #0d1411;
+          --card: #17201c;
+          --ink: #e7ece9;
+          --muted: #9ca7a2;
+          --line: #26312c;
+          --accent: #8fd1b1;
+          --accent-soft: #1b3529;
+          --gold: #d9b862;
+          --panel: #143a2d;
+          --shadow: none;
         }
       }
       * { box-sizing: border-box; }
@@ -85,19 +91,35 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font: 16px/1.5 'Familjen Grotesk Variable', system-ui, sans-serif;
+        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
+      .panel {
+        background: var(--panel);
+        color: var(--on-panel);
+        border-radius: 0 0 1.75rem 1.75rem;
+        padding-top: env(safe-area-inset-top);
+      }
+      .panel ::selection { background: var(--on-panel); color: var(--panel); }
+      .panel-inner { max-width: 28rem; margin: 0 auto; padding: 1rem 1.25rem 1.75rem; }
+      .brand { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-size: 0.9rem; font-weight: 600; color: var(--on-panel-muted); }
+      .brand svg { width: 1.25rem; height: 1.25rem; color: var(--on-panel); }
+      .brand .star { fill: var(--gold); }
+      .panel h1 { margin: 0; font-size: 1.5rem; line-height: 1.2; font-weight: 700; }
+      .panel p { margin: 0; }
       main {
         max-width: 28rem;
         margin: 0 auto;
-        padding: 2rem 1rem calc(6rem + env(safe-area-inset-bottom));
+        padding: 1.25rem 1rem calc(6rem + env(safe-area-inset-bottom));
       }
+      .card { background: var(--card); border-radius: 1rem; box-shadow: var(--shadow); }
+      .section-title { margin: 1.75rem 0.25rem 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--muted); }
       .tabs {
         position: fixed;
         inset: auto 0 0;
         display: flex;
         justify-content: center;
-        background: var(--bg);
+        background: var(--card);
         border-top: 1px solid var(--line);
         padding-bottom: env(safe-area-inset-bottom);
       }
@@ -108,27 +130,43 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         gap: 0.1rem;
         padding: 0.55rem 0 0.5rem;
         color: var(--muted);
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         text-decoration: none;
       }
-      .tabs a[aria-current='page'] { color: var(--accent); font-weight: 650; }
+      .tabs a[aria-current='page'] { color: var(--accent); font-weight: 600; }
       .tabs svg { width: 1.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      @media (min-width: 40rem) {
+        .panel { max-width: 26rem; margin: 1.5rem auto 0; border-radius: 1.75rem; }
+        .tabs { inset: auto 0 1rem; width: 26rem; margin: 0 auto; border: 1px solid var(--line); border-radius: 1rem; box-shadow: var(--shadow); padding-bottom: 0; }
+      }
       .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       select, button {
         font: inherit;
         font-size: 1rem;
         color: var(--ink);
-        background: transparent;
+        background: var(--card);
         border: 1px solid var(--line);
-        border-radius: 0.4rem;
-        padding: 0.55rem 0.6rem;
+        border-radius: 0.75rem;
+        padding: 0.65rem 0.75rem;
         width: 100%;
       }
-      button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
-      @media (hover: hover) { button:hover { background: var(--accent-soft); } }
+      button { cursor: pointer; background: var(--accent); border-color: var(--accent); color: var(--card); font-weight: 600; }
+      @media (prefers-color-scheme: dark) { button { color: var(--bg); } }
+      @media (hover: hover) { button:hover { filter: brightness(1.12); } }
       select:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .brand { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
-      header { text-align: center; }
+      .panel button:focus-visible, .panel a:focus-visible { outline-color: var(--on-panel); }
+      .pill {
+        width: auto;
+        padding: 0.3rem 0.85rem;
+        border: 0;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.14);
+        color: var(--on-panel);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      @media (prefers-color-scheme: dark) { .pill { color: var(--on-panel); } }
+      .note { margin: 1.75rem 0.25rem 0; color: var(--muted); font-size: 0.85rem; text-wrap: pretty; }
     </style>
   </body>
 </html>

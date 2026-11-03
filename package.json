@@ -11,7 +11,6 @@
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
-    "@fontsource-variable/familjen-grotesk": "5.3.0",
     "astro": "^7.4.4"
   },
   "devDependencies": {
