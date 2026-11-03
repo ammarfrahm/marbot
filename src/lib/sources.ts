@@ -45,7 +45,7 @@ export const myquran: Source = {
 export const aladhan: Source = {
   id: 'aladhan',
   name: 'Aladhan',
-  label: 'Aladhan · hitungan Kemenag',
+  label: 'Aladhan · hitungan, bisa 2–4 menit lebih awal',
   url: (city, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${city.lat}&longitude=${city.lon}` +
     `&method=20&timezonestring=${ZONE_IANA[city.utcOffset]}`,
