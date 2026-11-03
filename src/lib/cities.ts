@@ -7,8 +7,9 @@ export type City = { id: string; name: string; region: string; lat: number; lon:
 export const CITIES = data as City[];
 export const DEFAULT_CITY_ID = '1301'; // KOTA JAKARTA
 
-/** "KAB. BANDUNG BARAT" → "Kab. Bandung Barat" */
-export const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s.(-])\p{L}/gu, (m) => m.toUpperCase());
+/** "KAB. BANDUNG BARAT" → "Kab. Bandung Barat"; acronyms stay: "DKI JAKARTA" → "DKI Jakarta" */
+export const titleCase = (s: string) =>
+  s.toLowerCase().replace(/(^|[\s.(-])\p{L}/gu, (m) => m.toUpperCase()).replace(/\bDki\b/g, 'DKI');
 
 export function cityById(id: string | null): City | undefined {
   return CITIES.find((c) => c.id === id);
