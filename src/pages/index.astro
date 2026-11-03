@@ -306,6 +306,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     });
     $('locate').addEventListener('click', locate);
     $('change-city').addEventListener('click', openSettings);
+    addEventListener('online', () => (loadFailed || partial) && refresh());
     $('status-action').addEventListener('click', () => statusAction?.());
 
     citySelect.value = city.id;
