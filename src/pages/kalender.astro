@@ -21,8 +21,10 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
       <div>
-        <h2 id="month-title" tabindex="-1">&nbsp;</h2>
-        <p id="month-span">&nbsp;</p>
+        <div aria-live="polite" aria-atomic="true">
+          <h2 id="month-title" tabindex="-1">&nbsp;</h2>
+          <p id="month-span">&nbsp;</p>
+        </div>
         <button type="button" id="this-month" hidden>Kembali ke bulan ini</button>
       </div>
       <button type="button" id="next" aria-label="Bulan berikutnya">
