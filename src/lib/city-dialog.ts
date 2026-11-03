@@ -26,6 +26,7 @@ type Options = {
 export function initCityDialog({ current, pick }: Options) {
   const dialog = document.getElementById('settings') as HTMLDialogElement;
   const input = document.getElementById('city') as HTMLInputElement;
+  const announceEl = document.getElementById('city-announce')!;
   const form = dialog.querySelector('form')!;
   const hint = document.getElementById('city-hint')!;
   let opener: HTMLElement | null = null;
@@ -37,10 +38,18 @@ export function initCityDialog({ current, pick }: Options) {
     input.placeholder = cityLabel(current());
     dialog.showModal();
   }
+  /** The dialog is gone by now, so say the change aloud: the page text moves without a cue. */
+  function announce(text: string) {
+    announceEl.textContent = '';
+    setTimeout(() => (announceEl.textContent = text), 100);
+  }
   function choose(city: City, note = '') {
     const refused = pick(city, note);
     if (refused) hint.textContent = refused;
-    else dialog.close();
+    else {
+      dialog.close();
+      announce(`Kota diganti ke ${titleCase(city.name)}.`);
+    }
   }
 
   /** Picks what is typed if it is one city; otherwise says why not and keeps the dialog open. */
@@ -67,6 +76,8 @@ export function initCityDialog({ current, pick }: Options) {
       hint.textContent = `${(e as Error).message}.`;
     }
   });
+  // A click on the dialog itself, not its form, is a click on the backdrop.
+  dialog.addEventListener('click', (e) => e.target === dialog && dialog.close());
   // Native close already returns focus to the opener; this covers an opener that has since hidden itself.
   dialog.addEventListener('close', () => {
     if (opener?.isConnected && !(opener as HTMLButtonElement).hidden) opener.focus();
