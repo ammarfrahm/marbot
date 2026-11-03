@@ -32,17 +32,23 @@ export function toInstant(date: string, hhmm: string, offset: UtcOffset): number
   return Date.parse(`${date}T${hhmm}:00+0${offset}:00`);
 }
 
-export type NextPrayer = { name: PrayerName; date: string; time: string; at: number };
+export type PrayerTime = { name: PrayerName; date: string; time: string; at: number };
+
+/** Every prayer in `days`, in time order. */
+function prayerTimes(days: DaySchedule[], offset: UtcOffset): PrayerTime[] {
+  return days
+    .flatMap((day) => PRAYERS.map((name) => ({ name, date: day.date, time: day[name], at: toInstant(day.date, day[name], offset) })))
+    .sort((a, b) => a.at - b.at);
+}
 
 /** First prayer strictly after `now`, or null when `days` doesn't reach that far. */
-export function nextPrayer(days: DaySchedule[], now: number, offset: UtcOffset): NextPrayer | null {
-  for (const day of [...days].sort((a, b) => a.date.localeCompare(b.date))) {
-    for (const name of PRAYERS) {
-      const at = toInstant(day.date, day[name], offset);
-      if (at > now) return { name, date: day.date, time: day[name], at };
-    }
-  }
-  return null;
+export function nextPrayer(days: DaySchedule[], now: number, offset: UtcOffset): PrayerTime | null {
+  return prayerTimes(days, offset).find((p) => p.at > now) ?? null;
+}
+
+/** Latest prayer at or before `now`, or null when `days` doesn't reach back that far. */
+export function lastPrayer(days: DaySchedule[], now: number, offset: UtcOffset): PrayerTime | null {
+  return prayerTimes(days, offset).findLast((p) => p.at <= now) ?? null;
 }
 
 /** "HH:MM:SS" until the target, clamped at zero. */

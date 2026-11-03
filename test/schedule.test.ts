@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityDate, formatCountdown, nextPrayer, toInstant, type DaySchedule } from '../src/lib/schedule';
+import { cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
   date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
@@ -46,6 +46,24 @@ describe('nextPrayer', () => {
     const next = nextPrayer([day('2026-11-03')], at('2026-11-03T11:00:00+08:00'), 8)!;
     expect(next.name).toBe('dzuhur');
     expect(next.at - at('2026-11-03T11:00:00+08:00')).toBe(40 * 60_000);
+  });
+});
+
+describe('lastPrayer', () => {
+  const days = [day('2026-11-03'), day('2026-11-02', { isya: '19:00' })];
+
+  it('picks the prayer that has just begun, counting its exact minute', () => {
+    expect(lastPrayer(days, at('2026-11-03T11:40:00+07:00'), 7)).toMatchObject({ name: 'dzuhur', date: '2026-11-03' });
+  });
+
+  it('reaches back to yesterday’s Isya before Subuh', () => {
+    expect(lastPrayer(days, at('2026-11-03T02:00:00+07:00'), 7)).toMatchObject({
+      name: 'isya', date: '2026-11-02', time: '19:00',
+    });
+  });
+
+  it('returns null when yesterday is not loaded', () => {
+    expect(lastPrayer([day('2026-11-03')], at('2026-11-03T02:00:00+07:00'), 7)).toBeNull();
   });
 });
 
