@@ -73,6 +73,13 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     return node;
   }
 
+  /** The sr-only span below already reads the full date; this short one would read as "23 3". */
+  function gregDay(text: string) {
+    const node = el('span', 'g', text);
+    node.setAttribute('aria-hidden', 'true');
+    return node;
+  }
+
   function dayItem(d: HariPenting, withCountdown: boolean) {
     const li = document.createElement('li');
     const what = el('div', 'what', '');
@@ -108,7 +115,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       const td = document.createElement('td');
       td.append(
         el('span', 'h', String(day)),
-        el('span', 'g', day === 1 || gDay === 1 ? greg(date, { day: 'numeric', month: 'short' }) : String(gDay)),
+        gregDay(day === 1 || gDay === 1 ? greg(date, { day: 'numeric', month: 'short' }) : String(gDay)),
         el('span', 'sr-only', `, ${greg(date, { weekday: 'long', day: 'numeric', month: 'long' })}${marked.has(date) ? `, ${marked.get(date)!.name}` : ''}`),
       );
       if (date === today) td.setAttribute('aria-current', 'date');
