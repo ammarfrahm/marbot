@@ -86,7 +86,7 @@ const at = (deg: number, r: number) => {
 </Base>
 
 <script>
-  import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
+  import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase, type City } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
   import { store, storeKey } from '../lib/store';
   import { $, setText } from '../lib/dom';
@@ -199,25 +199,26 @@ const at = (deg: number, r: number) => {
     listen('deviceorientation');
   }
 
-  // "Hitung dari lokasi saya" switches the origin to the device; once it has, the same button goes back to the city.
-  let usingGps = false;
-  function showOrigin(gps: boolean) {
-    usingGps = gps;
-    $('locate').querySelector('span')!.textContent = gps ? `Kembali ke ${titleCase(city.name)}` : 'Hitung dari lokasi saya';
+  // The secondary button is "Hitung dari lokasi saya"; after a location fix it becomes the way back.
+  let undo: { label: string; run: () => void } | null = null;
+  function setUndo(to: typeof undo) {
+    undo = to;
+    $('locate').querySelector('span')!.textContent = to?.label ?? 'Hitung dari lokasi saya';
   }
   function useCity() {
     setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
-    showOrigin(false);
+    setUndo(null);
   }
+  const backTo = (name: string) => `Kembali ke ${titleCase(name)}`;
 
   $('locate').addEventListener('click', () => {
-    if (usingGps) return useCity();
+    if (undo) return undo.run();
     if (!('geolocation' in navigator)) return void ($('hint').textContent = 'Browser ini tidak mendukung lokasi.');
     $('hint').textContent = 'Mencari lokasi…';
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
-        showOrigin(true);
+        setUndo({ label: backTo(city.name), run: useCity });
       },
       (e) => {
         $('hint').textContent = `${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
@@ -228,15 +229,15 @@ const at = (deg: number, r: number) => {
 
   useCity();
 
-  initCityDialog({
-    current: () => city,
-    pick: (c) => {
-      city = c;
-      // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
-      if (navigator.onLine) store.set(storeKey('city'), c.id);
-      useCity();
-    },
-  });
+  function pickCity(c: City, back?: City) {
+    city = c;
+    // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
+    if (navigator.onLine) store.set(storeKey('city'), c.id);
+    useCity();
+    // A location fix replaced the city: the same button goes back to it.
+    if (back) setUndo({ label: backTo(back.name), run: () => pickCity(back) });
+  }
+  initCityDialog({ current: () => city, pick: (c, _note, back) => pickCity(c, back) });
 </script>
 
 <style>

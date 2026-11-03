@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { locatedChange } from '../src/lib/city-dialog';
 import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, titleCase } from '../src/lib/cities';
 
 describe('titleCase', () => {
@@ -50,4 +51,18 @@ describe('offerLinked', () => {
   it('offers a linked city that differs from the saved one', () => expect(offerLinked(a, b)).toBe(true));
   it('stays quiet when the link is the saved city', () => expect(offerLinked(a, a)).toBe(false));
   it('stays quiet without a link', () => expect(offerLinked(undefined, a)).toBe(false));
+});
+
+describe('locatedChange', () => {
+  const jakarta = CITIES.find((c) => c.id === '1301')!;
+  const bandung = CITIES.find((c) => c.name === 'KOTA BANDUNG')!;
+  it('says what was chosen and offers the way back', () => {
+    expect(locatedChange(jakarta, bandung, 12)).toEqual({ note: 'Lokasi Anda: Kota Bandung.', back: jakarta });
+  });
+  it('prefers the distance warning when the nearest city is far', () => {
+    const { note, back } = locatedChange(jakarta, bandung, 300);
+    expect(note).toBe('Kota terdekat Kota Bandung berjarak 300 km, jadwal mungkin tidak akurat.');
+    expect(back).toBe(jakarta);
+  });
+  it('offers no way back when the city did not change', () => expect(locatedChange(jakarta, jakarta, 3).back).toBeUndefined());
 });

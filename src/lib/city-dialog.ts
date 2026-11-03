@@ -17,10 +17,15 @@ export function locateNearest(): Promise<{ city: City; km: number }> {
 export const farNote = (city: City, km: number) =>
   km > 150 ? `Kota terdekat ${titleCase(city.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '';
 
+/** What a geolocation pick says: the distance warning if far, else the choice; `back` is the city to return to, unless nothing changed. */
+export function locatedChange(prev: City, city: City, km: number): { note: string; back?: City } {
+  return { note: farNote(city, km) || `Lokasi Anda: ${titleCase(city.name)}.`, back: prev.id === city.id ? undefined : prev };
+}
+
 type Options = {
   current: () => City;
-  /** Called with the chosen city. */
-  pick: (city: City, note?: string) => void;
+  /** Called with the chosen city; `back` is set when a location fix replaced another city. */
+  pick: (city: City, note?: string, back?: City) => void;
 };
 
 /** Wires the shared #settings dialog and every [data-open-city] button on the page. */
@@ -55,8 +60,8 @@ export function initCityDialog({ current, pick }: Options) {
     announceEl.textContent = '';
     setTimeout(() => (announceEl.textContent = text), 100);
   }
-  function choose(city: City, note = '') {
-    pick(city, note);
+  function choose(city: City, note = '', back?: City) {
+    pick(city, note, back);
     dialog.close();
     announce(`Kota diganti ke ${titleCase(city.name)}.`);
   }
@@ -84,7 +89,8 @@ export function initCityDialog({ current, pick }: Options) {
     setHint('Mencari lokasi…');
     try {
       const { city, km } = await locateNearest();
-      choose(city, farNote(city, km));
+      const { note, back } = locatedChange(current(), city, km);
+      choose(city, note, back);
     } catch (e) {
       setHint(`${(e as Error).message}.`, true);
     }

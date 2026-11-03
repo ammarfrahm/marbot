@@ -58,7 +58,7 @@ import CityDialog from '../components/CityDialog.astro';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
     import { store, storeKey } from '../lib/store';
-    import { farNote, initCityDialog, locateNearest } from '../lib/city-dialog';
+    import { initCityDialog, locatedChange, locateNearest } from '../lib/city-dialog';
 
     const sourceSelect = $<HTMLSelectElement>('source');
 
@@ -280,11 +280,11 @@ import CityDialog from '../components/CityDialog.astro';
       else setStatus('');
     }
 
-    function setCity(c: City, note = '') {
+    function setCity(c: City, note = '', back?: City) {
       city = c;
       chosen = true;
       cityNote = note;
-      cityAction = undefined;
+      cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back) };
       $('city-name').textContent = titleCase(c.name);
       toSave = c.id;
       history.replaceState(null, '', `?kota=${c.id}`);
@@ -294,7 +294,10 @@ import CityDialog from '../components/CityDialog.astro';
     function locate() {
       setStatus('Mencari lokasi…');
       locateNearest().then(
-        ({ city: c, km }) => setCity(c, farNote(c, km)),
+        ({ city: c, km }) => {
+          const { note, back } = locatedChange(city, c, km);
+          setCity(c, note, back);
+        },
         (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: cityDialog.open }),
       );
     }
