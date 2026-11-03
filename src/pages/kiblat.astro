@@ -41,7 +41,7 @@ const at = (deg: number, r: number) => {
           CARDINALS.map(({ deg, label }) => {
             const p = at(deg, 76);
             return (
-              <text font-size="15" class:list={['cardinal', { north: deg === 0 }]} x={p.x} y={p.y} transform={`rotate(${deg} ${p.x} ${p.y})`}>
+              <text font-size="15" class:list={['cardinal', { north: deg === 0 }]} x={p.x} y={p.y}>
                 {label}
               </text>
             );
@@ -65,6 +65,7 @@ const at = (deg: number, r: number) => {
   </section>
 
   <p id="hint" role="status">Memuat…</p>
+  <p id="north-tip">Tidak tahu arah utara? Matahari terbit di timur.</p>
   <p id="announce" class="sr-only" aria-live="polite"></p>
   <div class="actions">
     <button type="button" id="compass" hidden>Nyalakan kompas</button>
@@ -95,6 +96,7 @@ const at = (deg: number, r: number) => {
   const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
   const hero = $<HTMLElement>('hero');
   const dial = $<SVGGElement>('dial');
+  const cardinals = [...document.querySelectorAll('.cardinal')];
   const ALIGNED_DEG = 3;
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
 
@@ -153,6 +155,10 @@ const at = (deg: number, r: number) => {
     const smooth = (Math.atan2(sy, sx) * (180 / Math.PI) + 360) % 360;
     shown += turnTo(shown, smooth);
     dial.setAttribute('transform', `rotate(${(-shown).toFixed(2)} 120 120)`);
+    // Letters stay upright while the dial turns.
+    for (const t of cardinals) t.setAttribute('transform', `rotate(${shown.toFixed(2)} ${t.getAttribute('x')} ${t.getAttribute('y')})`);
+    // From here #announce is the one live voice; the hint would repeat it.
+    $('hint').removeAttribute('role');
 
     const turn = turnTo(smooth, bearing);
     const nowAligned = Math.abs(turn) <= ALIGNED_DEG;
@@ -194,12 +200,25 @@ const at = (deg: number, r: number) => {
     listen('deviceorientation');
   }
 
+  // "Hitung dari lokasi saya" switches the origin to the device; once it has, the same button goes back to the city.
+  let usingGps = false;
+  function showOrigin(gps: boolean) {
+    usingGps = gps;
+    $('locate').querySelector('span')!.textContent = gps ? `Kembali ke ${titleCase(city.name)}` : 'Hitung dari lokasi saya';
+  }
+  function useCity() {
+    setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
+    showOrigin(false);
+  }
+
   $('locate').addEventListener('click', () => {
+    if (usingGps) return useCity();
     if (!('geolocation' in navigator)) return void ($('hint').textContent = 'Browser ini tidak mendukung lokasi.');
     $('hint').textContent = 'Mencari lokasi…';
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
+        showOrigin(true);
       },
       (e) => {
         $('hint').textContent = `${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
@@ -208,18 +227,14 @@ const at = (deg: number, r: number) => {
     );
   });
 
-  function useCity() {
-    setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
-  }
   useCity();
 
   initCityDialog({
     current: () => city,
     pick: (c) => {
-      // Jadwal needs the new city's month; saving it offline would leave Jadwal blank.
-      if (!navigator.onLine) return 'Sambungkan internet untuk mengganti kota.';
       city = c;
-      store.set(storeKey('city'), c.id);
+      // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
+      if (navigator.onLine) store.set(storeKey('city'), c.id);
       useCity();
     },
   });
@@ -250,6 +265,8 @@ const at = (deg: number, r: number) => {
   [data-mode='aligned'] #bearing { color: var(--accent); font-weight: 600; }
   #turn { color: var(--muted); }
 
+  #north-tip { margin: -0.5rem 0.25rem 1rem; color: var(--muted); font-size: var(--fs-sm); }
+  .hero:not([data-mode='static']) ~ #north-tip { display: none; } /* a live compass needs no tip */
   #hint { margin: 1rem 0.25rem; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; min-height: 2.7em; }
   .actions { display: grid; gap: 0.75rem; }
 

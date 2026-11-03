@@ -19,8 +19,8 @@ export const farNote = (city: City, km: number) =>
 
 type Options = {
   current: () => City;
-  /** Called with the chosen city; a returned string refuses the choice and is shown in the dialog. */
-  pick: (city: City, note?: string) => string | void;
+  /** Called with the chosen city. */
+  pick: (city: City, note?: string) => void;
 };
 
 /** Wires the shared #settings dialog and every [data-open-city] button on the page. */
@@ -45,12 +45,9 @@ export function initCityDialog({ current, pick }: Options) {
     setTimeout(() => (announceEl.textContent = text), 100);
   }
   function choose(city: City, note = '') {
-    const refused = pick(city, note);
-    if (refused) hint.textContent = refused;
-    else {
-      dialog.close();
-      announce(`Kota diganti ke ${titleCase(city.name)}.`);
-    }
+    pick(city, note);
+    dialog.close();
+    announce(`Kota diganti ke ${titleCase(city.name)}.`);
   }
 
   /** Picks what is typed if it is one city; otherwise says why not and keeps the dialog open. */
