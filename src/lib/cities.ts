@@ -14,7 +14,7 @@ export function cityById(id: string | null): City | undefined {
   return CITIES.find((c) => c.id === id);
 }
 
-function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
   const h =
     Math.sin(((bLat - aLat) * rad) / 2) ** 2 +
