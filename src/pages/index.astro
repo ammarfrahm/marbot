@@ -316,7 +316,7 @@ import CityDialog from '../components/CityDialog.astro';
     .hero { margin-top: 1.75rem; }
     #next-name { font-size: var(--fs-xl); font-weight: 600; }
     #countdown {
-      font-size: var(--fs-display);
+      font-size: min(var(--fs-display), 19vw); /* big text settings must not push it off a phone */
       font-weight: 300;
       line-height: 1.1;
       letter-spacing: -0.02em;
@@ -326,12 +326,14 @@ import CityDialog from '../components/CityDialog.astro';
     #next-at { color: var(--on-panel-muted); font-variant-numeric: tabular-nums; }
     [data-state='soon'] #countdown { font-weight: 600; }
     [data-state='soon'] #next-at { color: var(--on-panel); }
-    [data-state='now'] #countdown { font-size: var(--fs-display-sm); font-weight: 400; }
+    [data-state='now'] #countdown { font-size: min(var(--fs-display-sm), 12vw); font-weight: 400; }
     #times { list-style: none; margin: 0; padding: 0.35rem; }
     #times li {
       position: relative;
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
+      gap: 0 1rem;
       padding: 0.8rem 0.9rem 0.8rem 1.6rem;
       font-size: var(--fs-lg);
       font-variant-numeric: tabular-nums;

@@ -261,7 +261,7 @@ const at = (deg: number, r: number) => {
 
   .reading { margin-top: 0.75rem; }
   .reading p { margin: 0; }
-  #bearing { font-size: var(--fs-display-sm); font-weight: 300; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  #bearing { font-size: min(var(--fs-display-sm), 12vw); font-weight: 300; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   [data-mode='aligned'] #bearing { color: var(--accent); font-weight: 600; }
   #turn { color: var(--muted); }
 
