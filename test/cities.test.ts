@@ -33,7 +33,7 @@ describe('findCity', () => {
 });
 
 describe('matchHint', () => {
-  it('says nothing matched', () => expect(matchHint([])).toBe('Kota tidak ditemukan. Pilih dari daftar.'));
+  it('says nothing matched', () => expect(matchHint([])).toBe('Kota tidak ditemukan. Coba nama lain, atau pakai Lokasi saya.'));
   it('names up to three matches', () => {
     expect(matchHint(CITIES.filter((c) => /BANDUNG/.test(c.name)).slice(0, 2))).toBe('2 kota cocok: Kab. Bandung, Kab. Bandung Barat — pilih dari daftar.');
     expect(matchHint(matchCities('jawa barat'))).toMatch(/^\d+ kota cocok: [^,]+, [^,]+, [^,]+, dll\. — pilih dari daftar\.$/);

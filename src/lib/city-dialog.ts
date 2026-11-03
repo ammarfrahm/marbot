@@ -32,9 +32,20 @@ export function initCityDialog({ current, pick }: Options) {
   const hint = document.getElementById('city-hint')!;
   let opener: HTMLElement | null = null;
 
+  /** The status line under the field; an error reads in ink at 600, the helper above stays muted. */
+  function setHint(text: string, error = false) {
+    hint.textContent = text;
+    hint.classList.toggle('error', error && !!text);
+  }
+  function setInvalid(on: boolean) {
+    if (on) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
+  }
+
   function open() {
     opener = document.activeElement as HTMLElement | null;
-    hint.textContent = '';
+    setHint('');
+    setInvalid(false);
     input.value = '';
     input.placeholder = cityLabel(current());
     dialog.showModal();
@@ -54,7 +65,8 @@ export function initCityDialog({ current, pick }: Options) {
   function pickTyped() {
     const hits = matchCities(input.value);
     if (hits.length === 1) return choose(hits[0]);
-    hint.textContent = matchHint(hits);
+    setHint(matchHint(hits), true);
+    setInvalid(true);
     input.focus();
   }
   // The datalist fills in a full label and fires change; Enter and Selesai submit the form.
@@ -64,14 +76,17 @@ export function initCityDialog({ current, pick }: Options) {
     e.preventDefault(); // a typed name must resolve before the dialog closes
     pickTyped();
   });
-  input.addEventListener('input', () => (hint.textContent = ''));
+  input.addEventListener('input', () => {
+    setHint('');
+    setInvalid(false);
+  });
   document.getElementById('dlg-locate')!.addEventListener('click', async () => {
-    hint.textContent = 'Mencari lokasi…';
+    setHint('Mencari lokasi…');
     try {
       const { city, km } = await locateNearest();
       choose(city, farNote(city, km));
     } catch (e) {
-      hint.textContent = `${(e as Error).message}.`;
+      setHint(`${(e as Error).message}.`, true);
     }
   });
   // A click on the dialog itself, not its form, is a click on the backdrop.
