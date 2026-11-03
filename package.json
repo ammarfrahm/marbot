@@ -7,7 +7,8 @@
     "build": "astro build",
     "check": "astro check",
     "test": "vitest run --maxWorkers=2",
-    "cities": "node scripts/build-cities.mjs"
+    "cities": "node scripts/build-cities.mjs",
+    "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
     "astro": "^7.4.4"
