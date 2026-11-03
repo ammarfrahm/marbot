@@ -65,11 +65,14 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         --faint: #6b7571; /* past rows: lighter than muted, still 4.5:1 on card */
         --line: #e6e6e1;
         --accent: #173f32;
+        --on-accent: #ffffff;
         --accent-soft: #e6f0ea;
         --gold: #c8a24a;
         --panel: #173f32;
         --on-panel: #ffffff;
         --on-panel-muted: #c3d3cb;
+        --kaaba: #121614;
+        --scrim: #000000;
         --fs-xs: 0.75rem;
         --fs-sm: 0.875rem;
         --fs-md: 1rem;
@@ -94,6 +97,7 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
           --faint: #7f8a85;
           --line: #26312c;
           --accent: #8fd1b1;
+          --on-accent: #0d1411;
           --accent-soft: #1b3529;
           --gold: #d9b862;
           --panel: #143a2d;
@@ -182,8 +186,10 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         padding: 0.65rem 0.75rem;
         width: 100%;
       }
-      button { cursor: pointer; background: var(--accent); border-color: var(--accent); color: var(--card); font-weight: 600; }
-      @media (prefers-color-scheme: dark) { button { color: var(--bg); } }
+      button { cursor: pointer; background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+      button.secondary { display: flex; justify-content: center; align-items: center; gap: 0.4rem; background: var(--card); border-color: var(--line); color: var(--ink); }
+      button.secondary svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+      button.secondary .dot { fill: currentColor; stroke: none; }
       @media (hover: hover) { button:hover { filter: brightness(1.12); } }
       select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       .panel button:focus-visible, .panel a:focus-visible { outline-color: var(--on-panel); }
@@ -193,12 +199,11 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         padding: 0.3rem 1rem;
         border: 0;
         border-radius: var(--r-pill);
-        background: rgb(255 255 255 / 0.14);
+        background: color-mix(in srgb, var(--on-panel) 14%, transparent);
         color: var(--on-panel);
         font-size: var(--fs-sm);
         font-weight: 600;
       }
-      @media (prefers-color-scheme: dark) { .pill { color: var(--on-panel); } }
       .note { margin: 1.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; }
     </style>
   </body>

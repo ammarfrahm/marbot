@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import CityDialog from '../components/CityDialog.astro';
+import LocateButton from '../components/LocateButton.astro';
 
 // Ticks every 10°, longer at the cardinal points.
 const TICKS = Array.from({ length: 36 }, (_, i) => i * 10);
@@ -67,10 +68,7 @@ const at = (deg: number, r: number) => {
   <p id="announce" class="sr-only" aria-live="polite"></p>
   <div class="actions">
     <button type="button" id="compass" hidden>Nyalakan kompas</button>
-    <button type="button" id="locate">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
-      Hitung dari lokasi saya
-    </button>
+    <LocateButton id="locate" label="Hitung dari lokasi saya" />
   </div>
 
   <dl class="facts card">
@@ -239,7 +237,7 @@ const at = (deg: number, r: number) => {
   .cardinal.north { fill: var(--ink); }
   .needle { fill: var(--accent); }
   .hub { fill: var(--card); stroke: var(--accent); stroke-width: 2.5; }
-  .kaaba rect { fill: #121614; }
+  .kaaba rect { fill: var(--kaaba); }
   .kaaba line { stroke: var(--gold); stroke-width: 2; }
   @media (prefers-color-scheme: dark) { .kaaba rect { stroke: var(--muted); stroke-width: 1; } }
   .pointer { fill: var(--gold); visibility: hidden; }
@@ -254,9 +252,6 @@ const at = (deg: number, r: number) => {
 
   #hint { margin: 1rem 0.25rem; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; min-height: 2.7em; }
   .actions { display: grid; gap: 0.75rem; }
-  #locate { background: var(--card); border-color: var(--line); color: var(--ink); display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
-  #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-  #locate .dot { fill: currentColor; stroke: none; }
 
   .facts { margin: 1.5rem 0 0; padding: 0 1rem; }
   .facts div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.85rem 0; }
