@@ -1,0 +1,606 @@
+{
+"code": 200,
+"status": "OK",
+"data": [
+{
+"timings": {
+"Fajr": "04:06 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:53 (WIB)",
+"Sunset": "17:46 (WIB)",
+"Maghrib": "17:46 (WIB)",
+"Isha": "18:58 (WIB)",
+"Imsak": "03:56 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "01-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:06 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:54 (WIB)",
+"Sunset": "17:46 (WIB)",
+"Maghrib": "17:46 (WIB)",
+"Isha": "18:58 (WIB)",
+"Imsak": "03:56 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "02-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:06 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:54 (WIB)",
+"Sunset": "17:46 (WIB)",
+"Maghrib": "17:46 (WIB)",
+"Isha": "18:58 (WIB)",
+"Imsak": "03:56 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "03-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:05 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:55 (WIB)",
+"Sunset": "17:47 (WIB)",
+"Maghrib": "17:47 (WIB)",
+"Isha": "18:59 (WIB)",
+"Imsak": "03:55 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "04-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:05 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:55 (WIB)",
+"Sunset": "17:47 (WIB)",
+"Maghrib": "17:47 (WIB)",
+"Isha": "18:59 (WIB)",
+"Imsak": "03:55 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "05-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:05 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:56 (WIB)",
+"Sunset": "17:47 (WIB)",
+"Maghrib": "17:47 (WIB)",
+"Isha": "18:59 (WIB)",
+"Imsak": "03:55 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "06-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:05 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:56 (WIB)",
+"Sunset": "17:47 (WIB)",
+"Maghrib": "17:47 (WIB)",
+"Isha": "19:00 (WIB)",
+"Imsak": "03:55 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "07-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:56 (WIB)",
+"Sunset": "17:47 (WIB)",
+"Maghrib": "17:47 (WIB)",
+"Isha": "19:00 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:36 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "08-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:36 (WIB)",
+"Asr": "14:57 (WIB)",
+"Sunset": "17:48 (WIB)",
+"Maghrib": "17:48 (WIB)",
+"Isha": "19:00 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "09-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "14:57 (WIB)",
+"Sunset": "17:48 (WIB)",
+"Maghrib": "17:48 (WIB)",
+"Isha": "19:01 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "10-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "14:58 (WIB)",
+"Sunset": "17:48 (WIB)",
+"Maghrib": "17:48 (WIB)",
+"Isha": "19:01 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:40 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "11-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "14:58 (WIB)",
+"Sunset": "17:48 (WIB)",
+"Maghrib": "17:48 (WIB)",
+"Isha": "19:01 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:41 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "12-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "14:59 (WIB)",
+"Sunset": "17:49 (WIB)",
+"Maghrib": "17:49 (WIB)",
+"Isha": "19:02 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:41 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "13-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "14:59 (WIB)",
+"Sunset": "17:49 (WIB)",
+"Maghrib": "17:49 (WIB)",
+"Isha": "19:02 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:41 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "14-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "15:00 (WIB)",
+"Sunset": "17:49 (WIB)",
+"Maghrib": "17:49 (WIB)",
+"Isha": "19:03 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:41 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "15-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:37 (WIB)",
+"Asr": "15:00 (WIB)",
+"Sunset": "17:49 (WIB)",
+"Maghrib": "17:49 (WIB)",
+"Isha": "19:03 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:37 (WIB)",
+"Firstthird": "21:41 (WIB)",
+"Lastthird": "01:33 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "16-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:25 (WIB)",
+"Dhuhr": "11:38 (WIB)",
+"Asr": "15:01 (WIB)",
+"Sunset": "17:50 (WIB)",
+"Maghrib": "17:50 (WIB)",
+"Isha": "19:04 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:38 (WIB)",
+"Firstthird": "21:42 (WIB)",
+"Lastthird": "01:34 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "17-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:38 (WIB)",
+"Asr": "15:01 (WIB)",
+"Sunset": "17:50 (WIB)",
+"Maghrib": "17:50 (WIB)",
+"Isha": "19:04 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:38 (WIB)",
+"Firstthird": "21:42 (WIB)",
+"Lastthird": "01:34 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "18-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:38 (WIB)",
+"Asr": "15:02 (WIB)",
+"Sunset": "17:50 (WIB)",
+"Maghrib": "17:50 (WIB)",
+"Isha": "19:04 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:38 (WIB)",
+"Firstthird": "21:42 (WIB)",
+"Lastthird": "01:34 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "19-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:38 (WIB)",
+"Asr": "15:02 (WIB)",
+"Sunset": "17:51 (WIB)",
+"Maghrib": "17:51 (WIB)",
+"Isha": "19:05 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:38 (WIB)",
+"Firstthird": "21:42 (WIB)",
+"Lastthird": "01:34 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "20-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:38 (WIB)",
+"Asr": "15:03 (WIB)",
+"Sunset": "17:51 (WIB)",
+"Maghrib": "17:51 (WIB)",
+"Isha": "19:05 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:38 (WIB)",
+"Firstthird": "21:43 (WIB)",
+"Lastthird": "01:34 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "21-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:39 (WIB)",
+"Asr": "15:03 (WIB)",
+"Sunset": "17:51 (WIB)",
+"Maghrib": "17:51 (WIB)",
+"Isha": "19:06 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:39 (WIB)",
+"Firstthird": "21:43 (WIB)",
+"Lastthird": "01:35 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "22-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:39 (WIB)",
+"Asr": "15:04 (WIB)",
+"Sunset": "17:52 (WIB)",
+"Maghrib": "17:52 (WIB)",
+"Isha": "19:06 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:39 (WIB)",
+"Firstthird": "21:43 (WIB)",
+"Lastthird": "01:35 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "23-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:26 (WIB)",
+"Dhuhr": "11:39 (WIB)",
+"Asr": "15:04 (WIB)",
+"Sunset": "17:52 (WIB)",
+"Maghrib": "17:52 (WIB)",
+"Isha": "19:07 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:39 (WIB)",
+"Firstthird": "21:44 (WIB)",
+"Lastthird": "01:35 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "24-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:27 (WIB)",
+"Dhuhr": "11:40 (WIB)",
+"Asr": "15:05 (WIB)",
+"Sunset": "17:53 (WIB)",
+"Maghrib": "17:53 (WIB)",
+"Isha": "19:07 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:40 (WIB)",
+"Firstthird": "21:44 (WIB)",
+"Lastthird": "01:35 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "25-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:27 (WIB)",
+"Dhuhr": "11:40 (WIB)",
+"Asr": "15:05 (WIB)",
+"Sunset": "17:53 (WIB)",
+"Maghrib": "17:53 (WIB)",
+"Isha": "19:08 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:40 (WIB)",
+"Firstthird": "21:44 (WIB)",
+"Lastthird": "01:36 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "26-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:27 (WIB)",
+"Dhuhr": "11:40 (WIB)",
+"Asr": "15:06 (WIB)",
+"Sunset": "17:53 (WIB)",
+"Maghrib": "17:53 (WIB)",
+"Isha": "19:08 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:40 (WIB)",
+"Firstthird": "21:45 (WIB)",
+"Lastthird": "01:36 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "27-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:27 (WIB)",
+"Dhuhr": "11:41 (WIB)",
+"Asr": "15:06 (WIB)",
+"Sunset": "17:54 (WIB)",
+"Maghrib": "17:54 (WIB)",
+"Isha": "19:09 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:41 (WIB)",
+"Firstthird": "21:45 (WIB)",
+"Lastthird": "01:36 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "28-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:03 (WIB)",
+"Sunrise": "05:27 (WIB)",
+"Dhuhr": "11:41 (WIB)",
+"Asr": "15:07 (WIB)",
+"Sunset": "17:54 (WIB)",
+"Maghrib": "17:54 (WIB)",
+"Isha": "19:09 (WIB)",
+"Imsak": "03:53 (WIB)",
+"Midnight": "23:41 (WIB)",
+"Firstthird": "21:45 (WIB)",
+"Lastthird": "01:36 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "29-11-2026"
+}
+}
+},
+{
+"timings": {
+"Fajr": "04:04 (WIB)",
+"Sunrise": "05:28 (WIB)",
+"Dhuhr": "11:41 (WIB)",
+"Asr": "15:07 (WIB)",
+"Sunset": "17:55 (WIB)",
+"Maghrib": "17:55 (WIB)",
+"Isha": "19:10 (WIB)",
+"Imsak": "03:54 (WIB)",
+"Midnight": "23:41 (WIB)",
+"Firstthird": "21:46 (WIB)",
+"Lastthird": "01:37 (WIB)"
+},
+"date": {
+"gregorian": {
+"date": "30-11-2026"
+}
+}
+}
+]
+}
