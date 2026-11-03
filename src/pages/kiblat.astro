@@ -65,7 +65,6 @@ const at = (deg: number, r: number) => {
   </section>
 
   <p id="hint" role="status">Memuat…</p>
-  <p id="north-tip">Tidak tahu arah utara? Matahari terbit di timur.</p>
   <p id="announce" class="sr-only" aria-live="polite"></p>
   <div class="actions">
     <button type="button" id="compass" hidden>Nyalakan kompas</button>
@@ -77,7 +76,7 @@ const at = (deg: number, r: number) => {
     <div><dt>Jarak ke Ka'bah</dt><dd id="fact-distance">&nbsp;</dd></div>
   </dl>
 
-  <p class="note">
+  <p class="note calibrate">
     Kompas HP bisa meleset beberapa derajat di dekat logam, magnet, atau perangkat listrik. Jika arahnya melompat,
     gerakkan HP membentuk angka 8 untuk kalibrasi.
   </p>
@@ -97,6 +96,7 @@ const at = (deg: number, r: number) => {
   const dial = $<SVGGElement>('dial');
   const cardinals = [...document.querySelectorAll('.cardinal')];
   const ALIGNED_DEG = 3;
+  const NORTH_TIP = 'Tidak tahu arah utara? Matahari terbit di timur.';
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
 
   let city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
@@ -126,8 +126,8 @@ const at = (deg: number, r: number) => {
     setText('bearing', `${Math.round(bearing)}°`);
     setText('turn', 'dari utara');
     setText('hint', msg || (noCompass
-      ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara.`
-      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.'));
+      ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara. ${NORTH_TIP}`
+      : `Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah. ${NORTH_TIP}`));
   }
 
   // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
@@ -274,8 +274,7 @@ const at = (deg: number, r: number) => {
   [data-mode='aligned'] #bearing { color: var(--accent); font-weight: 600; }
   #turn { color: var(--muted); }
 
-  #north-tip { margin: -0.5rem 0.25rem 1rem; color: var(--muted); font-size: var(--fs-sm); }
-  .hero:not([data-mode='static']) ~ #north-tip { display: none; } /* a live compass needs no tip */
+  .hero[data-mode='static'] ~ .calibrate { display: none; } /* calibration is for a live compass */
   #hint { margin: 1rem 0.25rem; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; min-height: 3em; }
   .actions { display: grid; gap: 0.75rem; }
 
