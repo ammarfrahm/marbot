@@ -74,7 +74,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
   <script>
     import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
     import {
-      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
+      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName, type UtcOffset,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
@@ -224,15 +224,17 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
     const SOON_MS = 10 * 60_000;
     const ARRIVED_MS = 10 * 60_000;
+    const dateFormats: Partial<Record<UtcOffset, Intl.DateTimeFormat>> = {};
+    const dateFormat = (offset: UtcOffset) =>
+      (dateFormats[offset] ??= new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[offset] }));
+
     function tick() {
       const now = Date.now();
       const zone = ZONE_LABEL[city.utcOffset];
       const today = cityDate(now, city.utcOffset);
       if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
 
-      $('today').textContent =
-        `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
-        ` · ${cityClock(now, city.utcOffset)} ${zone}`;
+      setText('today', `${dateFormat(city.utcOffset).format(now)} · ${cityClock(now, city.utcOffset)} ${zone}`);
       const hijri = toHijri(today);
       setText('hijri', hijri ? formatHijri(hijri) : '');
 
@@ -250,7 +252,14 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
       for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
         const t = li.dataset.time as TimeName;
-        li.querySelector('time')!.textContent = listed?.[t] ?? '--:--';
+        const cell = li.querySelector('time')!;
+        const hhmm = listed?.[t] ?? '--:--';
+        const iso = listed ? `${listDate}T${hhmm}` : '';
+        if (cell.textContent !== hhmm || (cell.getAttribute('datetime') ?? '') !== iso) {
+          cell.textContent = hhmm;
+          if (iso) cell.setAttribute('datetime', iso);
+          else cell.removeAttribute('datetime');
+        }
         const current = shown?.name === t;
         li.classList.toggle('next', current);
         if (current) li.setAttribute('aria-current', 'time');
