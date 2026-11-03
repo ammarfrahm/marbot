@@ -28,8 +28,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       <section class="hero" aria-live="polite" aria-atomic="true">
         <p class="eyebrow">Menuju <strong id="next-name">…</strong></p>
         <p id="countdown" role="timer" aria-live="off">--:--:--</p>
-        <p id="next-at">&nbsp;</p>
+        <p id="next-at">Memuat jadwal…</p>
       </section>
+
+      <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
 
       <ol id="times">
         {
@@ -68,7 +70,6 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         </label>
       </form>
 
-      <p id="status" role="status">&nbsp;</p>
       <noscript><p>Bedug butuh JavaScript untuk menampilkan jadwal.</p></noscript>
     </main>
 
@@ -95,13 +96,36 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       let days: DaySchedule[] = [];
       let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
       let loadToken = 0;
+      let loadFailed = false;
 
-      const setStatus = (text: string) => ($('status').textContent = text || ' ');
+      // Write only real changes: the hero is a live region and the page ticks every second.
+      const setText = (id: string, text: string) => {
+        const el = $(id);
+        if (el.textContent !== text) el.textContent = text;
+      };
+
+      let statusAction: (() => void) | null = null;
+      function setStatus(text: string, action?: { label: string; run: () => void }) {
+        $('status').hidden = !text;
+        setText('status-text', text);
+        const button = $<HTMLButtonElement>('status-action');
+        button.hidden = !action;
+        button.textContent = action?.label ?? '';
+        statusAction = action?.run ?? null;
+      }
+
+      /** Why a source failed, in words a reader can act on. */
+      function describeError(e: unknown): string {
+        if (e instanceof DOMException && e.name === 'TimeoutError') return 'server tidak menjawab';
+        if (e instanceof TypeError) return navigator.onLine ? 'server tidak bisa dihubungi' : 'tidak ada koneksi internet';
+        const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
+        return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
+      }
 
       async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
         const [y, m] = ym.split('-').map(Number);
         const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
-        const errors: string[] = [];
+        let firstError: unknown;
         for (const source of order) {
           const key = `bedug:${source.id}:${c.id}:${ym}`;
           try {
@@ -113,10 +137,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
             store.set(key, JSON.stringify(month));
             return { source, days: month };
           } catch (e) {
-            errors.push(`${source.label}: ${(e as Error).message}`);
+            firstError ??= e;
           }
         }
-        throw new Error(errors.join(' · '));
+        throw firstError;
       }
 
       async function refresh() {
@@ -124,18 +148,19 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         const now = Date.now();
         const wanted = [cityDate(now, city.utcOffset), cityDate(now, city.utcOffset, 1)];
         loadedFor = `${city.id}:${wanted[0]}`;
-        setStatus('Memuat jadwal…');
+        loadFailed = false;
         try {
           const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
           const results = await Promise.all(months.map((ym) => loadMonth(city, ym)));
           if (token !== loadToken) return; // a newer city/source choice won
           days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
           const used = results[0].source;
-          setStatus(used.id === preferred ? `Sumber: ${used.label}` : `${SOURCES[preferred].label} gagal, pakai ${used.label}`);
+          setStatus(used.id === preferred ? `Sumber: ${used.label}` : `${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
         } catch (e) {
           if (token !== loadToken) return;
           days = [];
-          setStatus(`Gagal memuat jadwal (${(e as Error).message}). Coba lagi dalam 1 menit.`);
+          loadFailed = true;
+          setStatus(`${label(describeError(e))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
           setTimeout(() => token === loadToken && refresh(), 60_000);
         }
         tick();
@@ -161,13 +186,16 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         }
 
         if (!next) {
-          $('countdown').textContent = '--:--:--';
+          setText('next-name', '…');
+          setText('countdown', '--:--:--');
+          setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : 'Memuat jadwal…');
+          document.title = 'Bedug · Jadwal Sholat';
           return;
         }
         const left = formatCountdown(next.at - now);
-        $('next-name').textContent = label(next.name);
-        $('countdown').textContent = left;
-        $('next-at').textContent = `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`;
+        setText('next-name', label(next.name));
+        setText('countdown', left);
+        setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
         document.title = `${left} · ${label(next.name)} · Bedug`;
       }
 
@@ -187,7 +215,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
             setCity(c);
             if (km > 150) setStatus(`Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.`);
           },
-          (e) => setStatus(`Lokasi tidak tersedia (${e.message}). Pakai ${titleCase(city.name)}, atau pilih kota.`),
+          (e) => {
+            const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
+            setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}; pilih kota di bawah.`);
+          },
           { timeout: 10_000, maximumAge: 3_600_000 },
         );
       }
@@ -199,6 +230,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         refresh();
       });
       $('locate').addEventListener('click', locate);
+      $('status-action').addEventListener('click', () => statusAction?.());
 
       citySelect.value = city.id;
       sourceSelect.value = preferred;
@@ -286,7 +318,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       }
       button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
       select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      #status { margin-top: 1.25rem; color: var(--muted); font-size: 0.85rem; text-align: center; }
+      #status { margin: -1rem 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
+      #status button { width: auto; margin-left: 0.25rem; padding: 0.3rem 0.8rem; font-size: 0.9rem; }
     </style>
   </body>
 </html>

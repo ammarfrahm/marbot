@@ -4,6 +4,8 @@ import type { City } from './cities';
 export type SourceId = 'myquran' | 'aladhan';
 export type Source = {
   id: SourceId;
+  /** Short name for status messages. */
+  name: string;
   label: string;
   url(city: City, year: number, month: number): string;
   parse(json: unknown): DaySchedule[];
@@ -28,6 +30,7 @@ const pick = (raw: Record<string, unknown>, keys: Record<TimeName, string>) =>
 /** Official Kemenag RI (Bimas Islam) schedule, includes ihtiyat. */
 export const myquran: Source = {
   id: 'myquran',
+  name: 'myQuran',
   label: 'myQuran · jadwal resmi Kemenag',
   url: (city, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${city.id}/${year}/${pad(month)}`,
   parse(json) {
@@ -41,6 +44,7 @@ export const myquran: Source = {
 /** Calculated with Kemenag angles (method 20), without Kemenag's ihtiyat, so 2–4 min earlier. */
 export const aladhan: Source = {
   id: 'aladhan',
+  name: 'Aladhan',
   label: 'Aladhan · hitungan Kemenag',
   url: (city, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${city.lat}&longitude=${city.lon}` +
