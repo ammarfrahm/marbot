@@ -215,6 +215,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #month-marked :global(li.none) { color: var(--muted); font-size: var(--fs-sm); }
   #month-marked :global(.what strong) { font-size: var(--fs-md); }
   .month-title { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0 0.75rem; }
+  .month-title > div { flex: 1 1 100%; } /* full width, so the text swapping in cannot move it sideways */
   #this-month[hidden] { display: none; }
   #this-month { width: auto; height: auto; min-height: 2.75rem; padding: 0.3rem 0.85rem; border: 0; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-sm); }
 
