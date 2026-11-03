@@ -5,7 +5,8 @@ const { version, urls } = /*PRECACHE*/ { version: 'dev', urls: [] };
 const CACHE = `marbot-${version}`;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(urls)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the HTTP cache, so a new worker never stores stale files.
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(urls.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -27,6 +28,10 @@ self.addEventListener('fetch', (event) => {
     caches
       .match(request, { ignoreSearch: navigate }) // ?kota= links open the cached page
       .then((hit) => hit ?? fetch(request))
-      .catch(() => (navigate ? caches.match('/') : Response.error())),
+      .catch(() =>
+        navigate
+          ? caches.match(new URL(request.url).pathname.replace(/\/?$/, '/')).then((page) => page ?? caches.match('/')) // /kiblat is /kiblat/
+          : Response.error(),
+      ),
   );
 });

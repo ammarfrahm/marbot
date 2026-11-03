@@ -3,6 +3,7 @@
   "short_name": "Marbot",
   "description": "Jadwal sholat, arah kiblat, dan kalender Hijriah.",
   "lang": "id",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
