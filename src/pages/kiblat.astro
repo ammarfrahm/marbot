@@ -1,0 +1,221 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Ticks every 10°, longer at the cardinal points.
+const TICKS = Array.from({ length: 36 }, (_, i) => i * 10);
+const CARDINALS = [
+  { deg: 0, label: 'U' },
+  { deg: 90, label: 'T' },
+  { deg: 180, label: 'S' },
+  { deg: 270, label: 'B' },
+];
+const at = (deg: number, r: number) => {
+  const a = (deg - 90) * (Math.PI / 180);
+  return { x: +(120 + r * Math.cos(a)).toFixed(2), y: +(120 + r * Math.sin(a)).toFixed(2) };
+};
+---
+
+<Base title="Arah Kiblat · Bedug" description="Arah kiblat dari kota atau lokasi Anda, dengan kompas di HP." tab="kiblat">
+  <Fragment slot="header">
+    <h1>Arah kiblat</h1>
+    <p id="from">&nbsp;</p>
+  </Fragment>
+
+  <section class="hero" id="hero" data-mode="static">
+    <div class="drum">
+      <svg viewBox="0 0 240 240" aria-hidden="true">
+        <circle class="rim" cx="120" cy="120" r="119" />
+        <g id="dial">
+          <circle class="skin" cx="120" cy="120" r="97" />
+          <circle class="skin-ring" cx="120" cy="120" r="89" />
+          {
+            TICKS.map((deg) => {
+              const a = at(deg, deg % 90 ? 112 : 114);
+              const b = at(deg, deg % 90 ? 104 : 101);
+              return <line class:list={['tick', { major: !(deg % 90) }]} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />;
+            })
+          }
+          {
+            CARDINALS.map(({ deg, label }) => {
+              const p = at(deg, 78);
+              return (
+                <text class:list={['cardinal', { north: deg === 0 }]} x={p.x} y={p.y} transform={`rotate(${deg} ${p.x} ${p.y})`}>
+                  {label}
+                </text>
+              );
+            })
+          }
+          <g id="qibla">
+            <line class="needle" x1="120" y1="68" x2="120" y2="30" />
+            <g class="kaaba" transform="translate(120 11)">
+              <rect x="-8" y="-8" width="16" height="16" rx="1.5" />
+              <line x1="-8" y1="-3" x2="8" y2="-3" />
+            </g>
+          </g>
+        </g>
+        <polygon class="pointer" points="112,-16 128,-16 120,-4" />
+      </svg>
+      <div class="face">
+        <p id="bearing">--°</p>
+        <p id="turn">dari utara</p>
+      </div>
+    </div>
+  </section>
+
+  <p id="hint" role="status">Memuat…</p>
+  <div class="actions">
+    <button type="button" id="compass" hidden>Nyalakan kompas</button>
+    <button type="button" id="locate">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+      Hitung dari lokasi saya
+    </button>
+  </div>
+
+  <dl class="facts">
+    <div><dt>Arah</dt><dd id="fact-bearing">&nbsp;</dd></div>
+    <div><dt>Jarak ke Ka'bah</dt><dd id="fact-distance">&nbsp;</dd></div>
+  </dl>
+
+  <p class="note">
+    Kompas HP bisa meleset beberapa derajat di dekat logam, magnet, atau perangkat listrik. Jika arahnya melompat,
+    gerakkan HP membentuk angka 8 untuk kalibrasi.
+  </p>
+  <noscript><p>Bedug butuh JavaScript untuk menghitung arah kiblat.</p></noscript>
+</Base>
+
+<script>
+  import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
+  import { KAABA, qiblaBearing, turnTo } from '../lib/qibla';
+  import { store } from '../lib/store';
+
+  const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
+  const hero = $<HTMLElement>('hero');
+  const dial = $<SVGGElement>('dial');
+  const ALIGNED_DEG = 3;
+  const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
+
+  const city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+  let bearing = 0;
+
+  function setOrigin(lat: number, lon: number, from: string) {
+    bearing = qiblaBearing(lat, lon);
+    $('qibla').setAttribute('transform', `rotate(${bearing.toFixed(2)} 120 120)`);
+    $('from').textContent = from;
+    $('fact-bearing').textContent = `${bearing.toFixed(1).replace('.', ',')}° dari utara, ke ${POINTS[Math.round(bearing / 45) % 8]}`;
+    $('fact-distance').textContent = `${Math.round(distanceKm(lat, lon, KAABA.lat, KAABA.lon)).toLocaleString('id-ID')} km`;
+    if (hero.dataset.mode === 'static') showStatic();
+  }
+
+  function showStatic() {
+    $('bearing').textContent = `${Math.round(bearing)}°`;
+    $('turn').textContent = 'dari utara';
+    $('hint').textContent = 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
+  }
+
+  // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
+  // shortcut: headings are magnetic, not true north; Indonesia's declination stays within about 4°, near the alignment tolerance. Correct with a declination model if that ever matters.
+  type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
+  let sx = 0;
+  let sy = 0;
+  let shown = 0; // the dial's rotation, unwrapped so it never spins the long way round
+  let aligned = false;
+
+  function onOrientation(e: CompassEvent) {
+    let heading: number | null = null;
+    if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
+    else if (e.absolute && e.alpha !== null) heading = 360 - e.alpha;
+    if (heading === null) return;
+    heading += screen.orientation?.angle ?? 0;
+
+    const a = heading * (Math.PI / 180);
+    const first = hero.dataset.mode === 'static';
+    sx = first ? Math.cos(a) : sx * 0.8 + Math.cos(a) * 0.2;
+    sy = first ? Math.sin(a) : sy * 0.8 + Math.sin(a) * 0.2;
+    const smooth = (Math.atan2(sy, sx) * (180 / Math.PI) + 360) % 360;
+    shown += turnTo(shown, smooth);
+    dial.setAttribute('transform', `rotate(${(-shown).toFixed(2)} 120 120)`);
+
+    const turn = turnTo(smooth, bearing);
+    const nowAligned = Math.abs(turn) <= ALIGNED_DEG;
+    if (nowAligned && !aligned) navigator.vibrate?.(40);
+    aligned = nowAligned;
+    hero.dataset.mode = aligned ? 'aligned' : 'live';
+    $('bearing').textContent = aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`;
+    $('turn').textContent = aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri';
+    $('hint').textContent = aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.';
+    $('compass').hidden = true;
+  }
+
+  const Orientation = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<PermissionState> } | undefined;
+  if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', onOrientation as EventListener);
+  } else if (typeof Orientation?.requestPermission === 'function') {
+    // iOS asks for permission, and only from a tap.
+    $<HTMLButtonElement>('compass').hidden = false;
+    $('compass').addEventListener('click', async () => {
+      const answer = await Orientation.requestPermission!().catch(() => 'denied');
+      if (answer === 'granted') window.addEventListener('deviceorientation', onOrientation as EventListener);
+      else $('hint').textContent = 'Izin kompas ditolak. Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
+    });
+  } else if (Orientation) {
+    window.addEventListener('deviceorientation', onOrientation as EventListener);
+  }
+
+  $('locate').addEventListener('click', () => {
+    if (!('geolocation' in navigator)) return void ($('hint').textContent = 'Browser ini tidak mendukung lokasi.');
+    $('hint').textContent = 'Mencari lokasi…';
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
+      },
+      (e) => {
+        const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
+        $('hint').textContent = `${why}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
+      },
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  });
+
+  setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
+</script>
+
+<style>
+  h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
+  #from { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  .hero { margin: 2.5rem 0 1rem; }
+  .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
+  .drum > * { grid-area: 1 / 1; }
+  .drum svg { width: 100%; height: 100%; overflow: visible; }
+  .rim { fill: var(--rim); }
+  .skin { fill: var(--skin); transition: fill 250ms ease-out; }
+  .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+  .tick { stroke: var(--peg); stroke-width: 2; stroke-linecap: round; }
+  .tick.major { stroke: var(--peg-on); stroke-width: 3; }
+  .cardinal { fill: var(--muted); font-size: 15px; font-weight: 650; text-anchor: middle; dominant-baseline: central; }
+  .cardinal.north { fill: var(--accent); }
+  .needle { stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+  .kaaba rect { fill: var(--ink); stroke: var(--peg-on); stroke-width: 1.5; }
+  .kaaba line { stroke: var(--peg-on); stroke-width: 2; }
+  .pointer { fill: var(--peg-on); visibility: hidden; }
+  [data-mode='live'] .pointer, [data-mode='aligned'] .pointer { visibility: visible; }
+  [data-mode='aligned'] .skin { fill: var(--skin-now); }
+  [data-mode='aligned'] .needle { stroke: var(--ink); }
+
+  .face { text-align: center; pointer-events: none; }
+  .face p { margin: 0; }
+  #bearing { font-size: clamp(2.5rem, 12vw, 3.25rem); font-weight: 650; line-height: 1.05; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  #turn { color: var(--muted); }
+  [data-mode='aligned'] #turn { color: var(--ink); } /* muted fails 4.5:1 on the lit skin */
+
+  #hint { margin: 0 0 1rem; color: var(--muted); font-size: 0.9rem; text-align: center; text-wrap: pretty; min-height: 2.7em; }
+  .actions { display: grid; gap: 0.75rem; }
+  #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
+  #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  #locate .dot { fill: currentColor; stroke: none; }
+
+  .facts { margin: 2rem 0 0; border-top: 1px solid var(--line); }
+  .facts div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .note { margin: 2rem 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; text-wrap: pretty; }
+</style>

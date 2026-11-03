@@ -8,6 +8,7 @@ const { title, description, tab } = Astro.props;
 // Icons share one 24px grid and a 1.8 stroke.
 const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
   { id: 'jadwal', href: '/', label: 'Jadwal', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+  { id: 'kiblat', href: '/kiblat/', label: 'Kiblat', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9l-1.8 4.2L9 15l1.8-4.2z"/>' },
   { id: 'kalender', href: '/kalender/', label: 'Kalender', icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v3.5M16 3v3.5"/>' },
 ];
 ---
