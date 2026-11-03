@@ -203,12 +203,16 @@ import PanelBoot from '../components/PanelBoot.astro';
         days = [];
         setText('source-note', '\u00a0');
         loadFailed = true;
+        // Way back offline: the saved city, else the default one if its month is on the device.
         const saved = savedCity();
-        if (!navigator.onLine && saved && saved.id !== city.id) {
+        const fallback = cityById(DEFAULT_CITY_ID)!;
+        const ym = cityDate(now, fallback.utcOffset).slice(0, 7);
+        const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
+        if (!navigator.onLine && back && back.id !== city.id) {
           const heldNow = left;
           setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
-            label: `Kembali ke ${titleCase(saved.name)}`,
-            run: () => setCity(saved, '', undefined, heldNow),
+            label: `Kembali ke ${titleCase(back.name)}`,
+            run: () => setCity(back, '', undefined, heldNow),
           });
         } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
