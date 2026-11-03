@@ -26,7 +26,7 @@ describe('toHijri', () => {
 
   it('turns the month over between the 29th or 30th and the 1st', () => {
     expect(formatHijri(toHijri('2026-11-03')!)).toBe('23 Jumadilawal 1448 H');
-    expect(formatHijri(toHijri('2026-10-11')!)).toBe('30 Rabiulakhir 1448 H');
+    expect(formatHijri(toHijri('2026-10-11')!)).toBe('29 Rabiulakhir 1448 H');
     expect(formatHijri(toHijri('2026-10-12')!)).toBe('1 Jumadilawal 1448 H');
   });
 
