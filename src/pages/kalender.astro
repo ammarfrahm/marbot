@@ -1,0 +1,194 @@
+---
+import Base from '../layouts/Base.astro';
+
+const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+---
+
+<Base title="Kalender Hijriah · Bedug" description="Tanggal Hijriah hari ini, hari-hari penting berikutnya, dan kalender bulan Hijriah." tab="kalender">
+  <Fragment slot="header">
+    <h1 id="hijri-today">&nbsp;</h1>
+    <p id="greg-today">&nbsp;</p>
+  </Fragment>
+
+  <section class="upcoming" aria-labelledby="upcoming-title">
+    <h2 id="upcoming-title">Hari penting berikutnya</h2>
+    <ol id="upcoming"></ol>
+  </section>
+
+  <section class="month" aria-labelledby="month-title">
+    <div class="month-head">
+      <button type="button" id="prev" aria-label="Bulan sebelumnya">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+      </button>
+      <div>
+        <h2 id="month-title">&nbsp;</h2>
+        <p id="month-span">&nbsp;</p>
+      </div>
+      <button type="button" id="next" aria-label="Bulan berikutnya">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+    <table id="grid" aria-labelledby="month-title">
+      <thead>
+        <tr>{WEEKDAYS.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <ul id="month-marked"></ul>
+    <button type="button" id="this-month" hidden>Kembali ke bulan ini</button>
+  </section>
+
+  <p class="note">
+    Tanggal mengikuti kriteria MABIMS yang dipakai Kemenag. Awal Ramadan, Syawal, dan Zulhijah ditetapkan lewat sidang
+    isbat, jadi bisa bergeser sehari.
+  </p>
+  <noscript><p>Bedug butuh JavaScript untuk menampilkan kalender.</p></noscript>
+</Base>
+
+<script>
+  import { cityById, DEFAULT_CITY_ID } from '../lib/cities';
+  import { addDays, formatHijri, HIJRI_MONTHS, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
+  import { cityDate } from '../lib/schedule';
+  import { store } from '../lib/store';
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+  const DAY = 86_400_000;
+
+  /** Format a yyyy-mm-dd date; the date is a calendar day, so read it in UTC. */
+  const greg = (date: string, opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('id-ID', { ...opts, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+  const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
+  const inDays = (n: number) => (n === 0 ? 'hari ini' : n === 1 ? 'besok' : `${n} hari lagi`);
+
+  let today = '';
+  let shown: HijriMonth | null = null;
+
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text: string) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;
+    return node;
+  }
+
+  function dayItem(d: HariPenting, withCountdown: boolean) {
+    const li = document.createElement('li');
+    const what = el('div', 'what', '');
+    what.append(el('strong', '', d.name), el('span', 'when', `${formatHijri(d.hijri)} · ${greg(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`));
+    if (d.isbat && d.date > today) what.append(el('span', 'when', 'Menunggu sidang isbat'));
+    li.append(what);
+    if (withCountdown) li.append(el('span', 'left', inDays(daysBetween(today, d.date))));
+    return li;
+  }
+
+  function renderMonth(m: HijriMonth) {
+    shown = m;
+    const last = addDays(m.start, m.length - 1);
+    $('month-title').textContent = `${HIJRI_MONTHS[m.month - 1]} ${m.year} H`;
+    $('month-span').textContent =
+      `${greg(m.start, { day: 'numeric', month: 'long' })} – ${greg(last, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    $<HTMLButtonElement>('prev').disabled = !shiftMonth(m, -1);
+    $<HTMLButtonElement>('next').disabled = !shiftMonth(m, 1);
+    $('this-month').hidden = today >= m.start && today <= last;
+
+    const marked = new Map(markedDays(m).map((d) => [d.date, d]));
+    const body = $('grid').querySelector('tbody')!;
+    const rows: HTMLTableRowElement[] = [];
+    let row = document.createElement('tr');
+    const lead = (new Date(`${m.start}T00:00:00Z`).getUTCDay() + 6) % 7; // Monday first
+    for (let i = 0; i < lead; i++) row.append(document.createElement('td'));
+    for (let day = 1; day <= m.length; day++) {
+      const date = addDays(m.start, day - 1);
+      const gDay = Number(date.slice(8));
+      const td = document.createElement('td');
+      td.append(
+        el('span', 'h', String(day)),
+        el('span', 'g', day === 1 || gDay === 1 ? greg(date, { day: 'numeric', month: 'short' }) : String(gDay)),
+        el('span', 'sr-only', `, ${greg(date, { weekday: 'long', day: 'numeric', month: 'long' })}${marked.has(date) ? `, ${marked.get(date)!.name}` : ''}`),
+      );
+      if (date === today) td.setAttribute('aria-current', 'date');
+      if (marked.has(date)) td.className = 'marked';
+      row.append(td);
+      if (row.children.length === 7) {
+        rows.push(row);
+        row = document.createElement('tr');
+      }
+    }
+    if (row.children.length) {
+      while (row.children.length < 7) row.append(document.createElement('td'));
+      rows.push(row);
+    }
+    body.replaceChildren(...rows);
+    $('month-marked').replaceChildren(...[...marked.values()].map((d) => dayItem(d, false)));
+  }
+
+  function render() {
+    today = cityDate(Date.now(), city.utcOffset);
+    const hijri = toHijri(today);
+    const month = hijriMonthOf(today);
+    $('greg-today').textContent = greg(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (!hijri || !month) {
+      $('hijri-today').textContent = 'Kalender belum tersedia';
+      return;
+    }
+    $('hijri-today').textContent = formatHijri(hijri);
+    $('upcoming').replaceChildren(...upcomingDays(today, 4).map((d) => dayItem(d, true)));
+    renderMonth(month);
+  }
+
+  $('prev').addEventListener('click', () => shown && renderMonth(shiftMonth(shown, -1) ?? shown));
+  $('next').addEventListener('click', () => shown && renderMonth(shiftMonth(shown, 1) ?? shown));
+  $('this-month').addEventListener('click', render);
+  // An app left open overnight should show the new day when it comes back.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && cityDate(Date.now(), city.utcOffset) !== today) render();
+  });
+  render();
+</script>
+
+<style>
+  h1 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+  #greg-today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  h2 { margin: 0; font-size: 1.05rem; }
+  .upcoming { margin: 2rem 0 2.5rem; }
+  .upcoming h2 { margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 400; color: var(--muted); text-align: center; }
+  ol, ul { list-style: none; margin: 0; padding: 0; }
+  #upcoming { border-top: 1px solid var(--line); }
+  #upcoming :global(li) {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+  #upcoming :global(li:first-child) { background: var(--accent-soft); border-radius: 0.4rem; }
+  #upcoming :global(li:first-child strong), #upcoming :global(li:first-child .left) { color: var(--accent); }
+  :global(.what) { display: grid; }
+  :global(.what strong) { font-size: 1.1rem; font-weight: 650; }
+  :global(.when) { color: var(--muted); font-size: 0.85rem; }
+  #upcoming :global(li:first-child .when) { color: var(--ink); } /* muted fails 4.5:1 on the soft accent */
+  :global(.left) { flex: none; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+  .month-head { display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; align-items: center; text-align: center; margin-bottom: 0.75rem; }
+  .month-head button { display: grid; place-items: center; height: 2.75rem; padding: 0; border-color: var(--line); }
+  .month-head button:disabled { opacity: 0.4; cursor: default; }
+  .month-head svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #month-span { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+  th { padding: 0 0 0.4rem; color: var(--muted); font-size: 0.75rem; font-weight: 400; }
+  th:nth-child(5) { color: var(--accent); } /* Jumat */
+  #grid :global(td) { height: 3.25rem; padding: 0.3rem 0; text-align: center; vertical-align: top; border-radius: 0.4rem; }
+  #grid :global(td .h) { display: block; font-size: 1.1rem; line-height: 1.3; }
+  #grid :global(td .g) { display: block; color: var(--muted); font-size: 0.7rem; }
+  #grid :global(td.marked) { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+  #grid :global(td.marked .g) { color: var(--ink); font-weight: 400; }
+  #grid :global(td[aria-current='date']) { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 650; }
+
+  #month-marked { margin-top: 0.75rem; }
+  #month-marked :global(li) { padding: 0.4rem 0; }
+  #month-marked :global(.what strong) { font-size: 1rem; }
+  #this-month { margin-top: 0.75rem; }
+  .note { margin: 2.5rem 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; text-wrap: pretty; }
+</style>

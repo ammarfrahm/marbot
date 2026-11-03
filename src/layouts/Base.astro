@@ -1,15 +1,22 @@
 ---
 import '@fontsource-variable/familjen-grotesk/wght.css';
 
-type Props = { title: string; description: string };
-const { title, description } = Astro.props;
+type Tab = 'jadwal' | 'kiblat' | 'kalender';
+type Props = { title: string; description: string; tab: Tab };
+const { title, description, tab } = Astro.props;
+
+// Icons share one 24px grid and a 1.8 stroke.
+const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
+  { id: 'jadwal', href: '/', label: 'Jadwal', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+  { id: 'kalender', href: '/kalender/', label: 'Kalender', icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v3.5M16 3v3.5"/>' },
+];
 ---
 
 <!doctype html>
 <html lang="id">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)" />
@@ -24,6 +31,16 @@ const { title, description } = Astro.props;
       </header>
       <slot />
     </main>
+    <nav class="tabs" aria-label="Menu">
+      {
+        TABS.map((t) => (
+          <a href={t.href} aria-current={t.id === tab ? 'page' : undefined}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" set:html={t.icon} />
+            {t.label}
+          </a>
+        ))
+      }
+    </nav>
 
     <style is:global>
       :root {
@@ -67,8 +84,30 @@ const { title, description } = Astro.props;
       main {
         max-width: 28rem;
         margin: 0 auto;
-        padding: 2rem 1rem 3rem;
+        padding: 2rem 1rem calc(6rem + env(safe-area-inset-bottom));
       }
+      .tabs {
+        position: fixed;
+        inset: auto 0 0;
+        display: flex;
+        justify-content: center;
+        background: var(--bg);
+        border-top: 1px solid var(--line);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .tabs a {
+        flex: 0 1 8rem;
+        display: grid;
+        justify-items: center;
+        gap: 0.1rem;
+        padding: 0.55rem 0 0.5rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+        text-decoration: none;
+      }
+      .tabs a[aria-current='page'] { color: var(--accent); font-weight: 650; }
+      .tabs svg { width: 1.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
       select, button {
         font: inherit;
         font-size: 1rem;
@@ -81,7 +120,7 @@ const { title, description } = Astro.props;
       }
       button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
       @media (hover: hover) { button:hover { background: var(--accent-soft); } }
-      select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      select:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       .brand { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
       header { text-align: center; }
     </style>

@@ -14,7 +14,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
 });
 ---
 
-<Base title="Bedug · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya.">
+<Base title="Bedug · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
