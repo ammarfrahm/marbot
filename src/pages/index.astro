@@ -36,7 +36,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         <p id="today">&nbsp;</p>
       </header>
 
-      <section class="hero" aria-live="polite" aria-atomic="true">
+      <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <div class="drum">
           <svg viewBox="0 0 240 240" aria-hidden="true">
             <circle class="rim" cx="120" cy="120" r="119" />
@@ -201,6 +201,8 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         tick();
       }
 
+      const SOON_MS = 10 * 60_000;
+      const ARRIVED_MS = 10 * 60_000;
       const pegs = [...document.querySelectorAll<SVGCircleElement>('#pegs circle')];
       let litPegs = -1;
       /** Light the share of pegs that matches the time already passed since the last prayer. */
@@ -222,22 +224,35 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
           ` · ${cityClock(now, city.utcOffset)} ${zone}`;
 
         const next = nextPrayer(days, now, city.utcOffset);
+        const last = lastPrayer(days, now, city.utcOffset);
+        // A prayer stays "arrived" for a while; before that, the last minutes count down in accent.
+        const arrived = last && now - last.at < ARRIVED_MS ? last : null;
+        const shown = arrived ?? next;
+        $('hero').dataset.state =
+          !next ? (loadFailed ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
+
         // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
-        const listDate = next?.date ?? today;
+        const listDate = shown?.date ?? today;
         const listed = days.find((d) => d.date === listDate);
         setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
         for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
           const t = li.dataset.time as TimeName;
           li.querySelector('time')!.textContent = listed?.[t] ?? '--:--';
-          const isNext = next?.name === t;
-          li.classList.toggle('next', isNext);
-          if (isNext) li.setAttribute('aria-current', 'time');
+          const current = shown?.name === t;
+          li.classList.toggle('next', current);
+          if (current) li.setAttribute('aria-current', 'time');
           else li.removeAttribute('aria-current');
           li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
         }
 
-        const last = lastPrayer(days, now, city.utcOffset);
-        lightPegs(last && next ? (now - last.at) / (next.at - last.at) : 0);
+        lightPegs(arrived ? 1 : last && next ? (now - last.at) / (next.at - last.at) : 0);
+        if (arrived) {
+          setText('next-name', label(arrived.name));
+          setText('countdown', 'Sudah masuk');
+          setText('next-at', `sejak ${arrived.time} ${zone}`);
+          document.title = `${label(arrived.name)} sudah masuk · Bedug`;
+          return;
+        }
         if (!next) {
           setText('next-name', '…');
           setText('countdown', '--:--:--');
@@ -321,6 +336,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         --rim: #6f2e17;
         --peg: #9a5a37;
         --peg-on: #f2c46b;
+        --skin-now: #f3d79a;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -334,6 +350,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
           --rim: #5a2a16;
           --peg: #7a4a2c;
           --peg-on: #f0b660;
+          --skin-now: #4a3216;
         }
       }
       * { box-sizing: border-box; }
@@ -366,6 +383,19 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
       .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
       #pegs circle { fill: var(--peg); transition: fill 250ms ease-out; }
       #pegs circle.lit { fill: var(--peg-on); }
+      .skin { transition: fill 250ms ease-out; transform-box: fill-box; transform-origin: center; }
+      [data-state='soon'] #countdown { color: var(--accent); }
+      [data-state='now'] .skin { fill: var(--skin-now); animation: strike 700ms cubic-bezier(0.16, 1, 0.3, 1) 3; }
+      [data-state='now'] #countdown { font-size: clamp(2rem, 9vw, 2.75rem); }
+      [data-state='now'] #next-at { color: var(--ink); } /* muted fails 4.5:1 on the lit skin */
+      /* The drum is struck three times when a prayer arrives. */
+      @keyframes strike {
+        from { transform: scale(1.03); }
+        to { transform: scale(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-state='now'] .skin { animation: none; }
+      }
       .face { text-align: center; }
       #next-name { font-size: 1.35rem; font-weight: 600; }
       #countdown {

@@ -68,9 +68,14 @@ describe('lastPrayer', () => {
 });
 
 describe('formatCountdown', () => {
-  it('formats as HH:MM:SS, rounding partial seconds up', () => {
+  it('formats as HH:MM:SS from an hour up', () => {
     expect(formatCountdown(3_723_000)).toBe('01:02:03');
-    expect(formatCountdown(500)).toBe('00:00:01');
-    expect(formatCountdown(-5)).toBe('00:00:00');
+    expect(formatCountdown(3_600_000)).toBe('01:00:00');
+  });
+
+  it('drops the hours under an hour, rounding partial seconds up', () => {
+    expect(formatCountdown(3_599_000)).toBe('59:59');
+    expect(formatCountdown(500)).toBe('00:01');
+    expect(formatCountdown(-5)).toBe('00:00');
   });
 });
