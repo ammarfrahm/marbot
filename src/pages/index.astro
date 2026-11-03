@@ -85,12 +85,21 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     const sourceSelect = $<HTMLSelectElement>('source');
     const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
-    // A shared link (?kota=<id>) wins over the stored city, and becomes the stored city.
+    // A shared link (?kota=<id>) is stored only when nothing is stored yet; otherwise it is shown for this view.
     const linked = cityById(new URLSearchParams(location.search).get('kota'));
-    let city: City = linked ?? cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
-    let toSave: string | null = linked?.id ?? null; // a city is stored only once its schedule has loaded
-    let chosen = !!store.get('bedug:city') || !!linked; // until then, offer geolocation
+    const stored = cityById(store.get('bedug:city'));
+    let city: City = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
+    let toSave: string | null = linked && !stored ? linked.id : null; // a city is stored only once its schedule has loaded
+    let chosen = !!stored || !!linked; // until then, offer geolocation
     let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
+    let cityAction: { label: string; run: () => void } | undefined;
+    if (linked && stored && linked.id !== stored.id) {
+      cityNote = `Jadwal ${titleCase(linked.name)} dari tautan.`;
+      cityAction = {
+        label: 'Simpan sebagai kota saya',
+        run: () => { store.set('bedug:city', linked.id); cityNote = ''; cityAction = undefined; quietStatus(); },
+      };
+    }
     let preferred: SourceId = store.get('bedug:source') === 'aladhan' ? 'aladhan' : 'myquran';
     let days: DaySchedule[] = [];
     let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
@@ -269,7 +278,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
     /** The status when nothing went wrong. */
     function quietStatus() {
-      if (cityNote) setStatus(cityNote);
+      if (cityNote) setStatus(cityNote, cityAction);
       else if (!chosen) setStatus(`Jadwal untuk ${titleCase(city.name)}.`, { label: 'Pakai lokasi saya', run: locate });
       else setStatus('');
     }
@@ -278,6 +287,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       city = c;
       chosen = true;
       cityNote = note;
+      cityAction = undefined;
       citySelect.value = c.id;
       $('city-name').textContent = titleCase(c.name);
       toSave = c.id;
