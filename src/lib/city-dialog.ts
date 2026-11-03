@@ -93,7 +93,7 @@ export function initCityDialog({ current, pick }: Options) {
       const { note, back } = locatedChange(current(), city, km);
       choose(city, note, back);
     } catch (e) {
-      setHint(`${(e as Error).message}.`, true);
+      setHint(`${(e as Error).message}. Ketik nama kota di atas.`, true);
     }
   });
   // A click on the dialog itself, not its form, is a click on the backdrop.
