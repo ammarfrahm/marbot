@@ -2,18 +2,17 @@
  * Fills the panel's place and date text before first paint, so real text replaces the placeholders
  * without a reflow (at 200% text size these wrap to several lines, a one-line placeholder cannot hold them).
  * PanelBoot.astro inlines this file as a classic script, so it has no imports and no exports; the tests load it by source.
- * It mirrors schedule.ts (cityDate, cityClock), hijri.ts (toHijri, formatHijri) and store.ts (the place note).
+ * It mirrors schedule.ts (cityDate, cityClock) and hijri.ts (toHijri, formatHijri), and reads the same city the page's
+ * script will: a shared ?kota= link first, then the saved bedug:city, else the default.
  */
 
-/** The place note `saveCity` keeps next to the saved city; null when the full script has to decide (old data without a note). */
-function resolvePlace(get, def) {
-  var id = get('bedug:city');
-  if (!id) return def;
-  try {
-    var place = JSON.parse(get('bedug:place'));
-    if (place && place.id === id) return place;
-  } catch (e) { /* no note yet: data saved before it existed */ }
-  return null;
+/** The place for the first of the link's and the saved city id that `cfg.cities` ({ id: [name, offset] }) knows, else the default. */
+function resolvePlace(ids, cfg) {
+  for (var k = 0; k < ids.length; k++) {
+    var c = ids[k] && Object.prototype.hasOwnProperty.call(cfg.cities, ids[k]) && cfg.cities[ids[k]];
+    if (c) return { id: ids[k], name: c[0], offset: c[1] };
+  }
+  return cfg.def;
 }
 
 /** The panel's lines for a place at instant `now`; a line is '' when it is unknown. */
@@ -38,23 +37,17 @@ function panelLines(now, place, cfg) {
   };
 }
 
-/**
- * Writes `cfg.fill` ({ element id: line name }) into the page. On a shared link (?kota=) the city is only known to the
- * full script, so the name is left alone; the dates still come from the saved city, which keeps the lines the right length.
- */
+/** Writes `cfg.fill` ({ element id: line name }) into the page. */
 function panelBoot(cfg, env) {
   env = env || {
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    linked: cfg.linked && /[?&]kota=/.test(location.search),
+    linked: cfg.linked ? (/[?&]kota=([^&#]*)/.exec(location.search) || [])[1] : null,
     now: Date.now(),
     doc: document,
   };
-  var place = resolvePlace(env.get, cfg.def);
-  if (!place) return;
-  var lines = panelLines(env.now, place, cfg);
+  var lines = panelLines(env.now, resolvePlace([env.linked, env.get('bedug:city')], cfg), cfg);
   for (var id in cfg.fill) {
     var el = env.doc.getElementById(id);
-    var line = cfg.fill[id];
-    if (el && lines[line] && !(env.linked && line === 'name')) el.textContent = lines[line];
+    if (el && lines[cfg.fill[id]]) el.textContent = lines[cfg.fill[id]];
   }
 }

@@ -38,45 +38,50 @@ describe('panelLines', () => {
 });
 
 describe('resolvePlace', () => {
-  const store = (data: Record<string, string>) => (k: string) => data[k] ?? null;
   const def = { id: '1301', name: 'Kota Jakarta', offset: 7 };
   const bandung = { id: '1', name: 'Kota Bandung', offset: 7 };
-  it('uses the default city on a first visit', () => expect(resolvePlace(store({}), def)).toBe(def));
-  it('uses the saved place note', () => {
-    expect(resolvePlace(store({ 'bedug:city': '1', 'bedug:place': JSON.stringify(bandung) }), def)).toEqual(bandung);
+  const makassar = { id: '2', name: 'Kota Makassar', offset: 8 };
+  const cities = { '1': ['Kota Bandung', 7], '2': ['Kota Makassar', 8] };
+  const place = (...ids: (string | null)[]) => resolvePlace(ids, { def, cities });
+  it('uses the default city on a first visit', () => expect(place(null, null)).toBe(def));
+  it('finds the saved city by id', () => expect(place(null, '2')).toEqual(makassar));
+  it('prefers a shared link over the saved city', () => expect(place('1', '2')).toEqual(bandung));
+  it('skips an id it does not know', () => {
+    expect(place('9999', '2')).toEqual(makassar);
+    expect(place('constructor', null)).toBe(def);
   });
-  it('defers when the city was saved before the note existed', () => expect(resolvePlace(store({ 'bedug:city': '1' }), def)).toBeNull());
-  it('defers when the note belongs to another city', () => {
-    expect(resolvePlace(store({ 'bedug:city': '2', 'bedug:place': JSON.stringify(bandung) }), def)).toBeNull();
+  it('finds a CITIES entry by its real id', () => {
+    const c = CITIES.find((x) => x.utcOffset === 9)!;
+    const all = Object.fromEntries(CITIES.map((x) => [x.id, [titleCase(x.name), x.utcOffset]]));
+    expect(resolvePlace([c.id], { def, cities: all })).toEqual({ id: c.id, name: titleCase(c.name), offset: 9 });
   });
-  it('defers when the note is not JSON', () => expect(resolvePlace(store({ 'bedug:city': '1', 'bedug:place': '{' }), def)).toBeNull());
 });
 
 describe('panelBoot', () => {
   const now = Date.parse('2026-11-04T09:00:00+07:00');
-  const run = (data: Record<string, string>, linked: boolean) => {
+  const cities = { '1': ['Kota Bandung', 7], '2': ['Kota Makassar', 8] };
+  const run = (data: Record<string, string>, linked: string | null) => {
     const els: Record<string, { textContent: string }> = { 'city-name': { textContent: 'Kota Jakarta' }, today: { textContent: '' }, hijri: { textContent: '' } };
     const def = { id: '1301', name: 'Kota Jakarta', offset: 7 };
     panelBoot(
-      { ...cfg, linked: true, def, fill: { 'city-name': 'name', today: 'today', hijri: 'hijri', missing: 'name' } },
+      { ...cfg, cities, def, fill: { 'city-name': 'name', today: 'today', hijri: 'hijri', missing: 'name' } },
       { get: (k: string) => data[k] ?? null, linked, now, doc: { getElementById: (id: string) => els[id] ?? null } },
     );
     return els;
   };
-  const bandung = { 'bedug:city': '1', 'bedug:place': JSON.stringify({ id: '1', name: 'Kota Bandung', offset: 7 }) };
-  it('writes the name and dates for the saved city', () => {
-    const els = run(bandung, false);
+  it('writes the name and dates for the saved city, with no place note', () => {
+    const els = run({ 'bedug:city': '1' }, null);
     expect(els['city-name'].textContent).toBe('Kota Bandung');
     expect(els.hijri.textContent).toBe('24 Jumadilawal 1448 H');
     expect(els.today.textContent).toMatch(/ · 09:00 WIB$/);
   });
-  it('keeps the name on a shared link but still writes the dates', () => {
-    const els = run(bandung, true);
-    expect(els['city-name'].textContent).toBe('Kota Jakarta');
-    expect(els.hijri.textContent).toBe('24 Jumadilawal 1448 H');
+  it('keeps working next to an old bedug:place key', () => {
+    expect(run({ 'bedug:city': '2', 'bedug:place': '{"id":"1","name":"X","offset":7}' }, null)['city-name'].textContent).toBe('Kota Makassar');
   });
-  it('writes nothing when the saved city has no note yet', () => {
-    const els = run({ 'bedug:city': '1' }, false);
-    expect(els.hijri.textContent).toBe('');
+  it('writes a shared link\'s name and its zone', () => {
+    const els = run({ 'bedug:city': '1' }, '2');
+    expect(els['city-name'].textContent).toBe('Kota Makassar');
+    expect(els.today.textContent).toMatch(/ · 10:00 WITA$/);
   });
+  it('writes the default city on a first visit', () => expect(run({}, null)['city-name'].textContent).toBe('Kota Jakarta'));
 });

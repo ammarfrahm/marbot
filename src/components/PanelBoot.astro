@@ -5,14 +5,22 @@ import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
 import { HIJRI_MONTHS } from '../lib/hijri';
 import { ZONE_IANA, ZONE_LABEL } from '../lib/schedule';
 
-/** `fill` maps an element id to a line: name, from, today, hijri or greg. Place it right after those elements. */
+/** `fill` maps an element id to a line: name, from, today, hijri or greg. Place it right after those elements. `linked`: the page honours a ?kota= link. */
 const { fill, linked = false } = Astro.props as { fill: Record<string, string>; linked?: boolean };
 const city = CITIES.find((c) => c.id === DEFAULT_CITY_ID)!;
-const dates = Object.values(fill).some((line) => line === 'today' || line === 'hijri' || line === 'greg');
+const lines = Object.values(fill);
+const dates = lines.some((line) => line === 'today' || line === 'hijri' || line === 'greg');
+const named = lines.some((line) => line === 'name' || line === 'from');
+// Every city's name and zone, so a shared link or a saved city paints its own name before first paint.
+// A page that shows only dates needs only the zones that are not the default WIB.
+const cities = Object.fromEntries(
+  CITIES.filter((c) => named || c.utcOffset !== city.utcOffset).map((c) => [c.id, [named ? titleCase(c.name) : '', c.utcOffset]]),
+);
 const cfg = {
   fill,
   linked,
   def: { id: city.id, name: titleCase(city.name), offset: city.utcOffset },
+  cities,
   months: HIJRI_MONTHS,
   starts: dates ? table.starts : [],
   first: table.first,

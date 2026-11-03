@@ -20,21 +20,16 @@ describe('saveCity / savedCity', () => {
   afterEach(() => vi.unstubAllGlobals());
   const jakarta = CITIES.find((c) => c.id === '1301')!;
 
-  it('keeps the city and a note of its name and zone', () => {
+  it('keeps just the city id', () => {
     saveCity(jakarta);
+    expect([...data.keys()]).toEqual(['bedug:city']);
     expect(data.get('bedug:city')).toBe('1301');
-    expect(JSON.parse(data.get('bedug:place')!)).toEqual({ id: '1301', name: 'Kota Jakarta', offset: 7 });
   });
-  it('still reads a city saved before the note existed, and adds the note', () => {
-    data.set('bedug:city', '1301');
-    expect(savedCity()?.id).toBe('1301');
-    expect(JSON.parse(data.get('bedug:place')!).id).toBe('1301');
-  });
-  it('replaces a note that belongs to another city', () => {
+  it('reads a city saved by an older version, ignoring its place note', () => {
     data.set('bedug:city', '1301');
     data.set('bedug:place', JSON.stringify({ id: '9999', name: 'X', offset: 9 }));
-    savedCity();
-    expect(JSON.parse(data.get('bedug:place')!).name).toBe('Kota Jakarta');
+    expect(savedCity()?.id).toBe('1301');
+    expect(data.get('bedug:place')).toContain('9999'); // left alone
   });
   it('is undefined with nothing saved', () => {
     expect(savedCity()).toBeUndefined();
