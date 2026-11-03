@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import CityDialog from '../components/CityDialog.astro';
 
 // Ticks every 10°, longer at the cardinal points.
 const TICKS = Array.from({ length: 36 }, (_, i) => i * 10);
@@ -18,7 +19,10 @@ const at = (deg: number, r: number) => {
 <Base title="Arah Kiblat · Marbot" description="Arah kiblat dari kota atau lokasi Anda, dengan kompas di HP." tab="kiblat">
   <Fragment slot="header">
     <h1>Arah kiblat</h1>
-    <p id="from">&nbsp;</p>
+    <div class="place">
+      <p id="from">&nbsp;</p>
+      <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
+    </div>
   </Fragment>
 
   <section class="hero card" id="hero" data-mode="static">
@@ -78,12 +82,14 @@ const at = (deg: number, r: number) => {
     gerakkan HP membentuk angka 8 untuk kalibrasi.
   </p>
   <noscript><p>Marbot butuh JavaScript untuk menghitung arah kiblat.</p></noscript>
+  <CityDialog />
 </Base>
 
 <script>
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
   import { KAABA, qiblaBearing, turnTo } from '../lib/qibla';
   import { store } from '../lib/store';
+  import { initCityDialog } from '../lib/city-dialog';
 
   const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
   const hero = $<HTMLElement>('hero');
@@ -91,7 +97,7 @@ const at = (deg: number, r: number) => {
   const ALIGNED_DEG = 3;
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
 
-  const city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+  let city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
 
   function setOrigin(lat: number, lon: number, from: string) {
@@ -174,11 +180,25 @@ const at = (deg: number, r: number) => {
     );
   });
 
-  setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
+  function useCity() {
+    setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
+  }
+  useCity();
+
+  initCityDialog({
+    current: () => city,
+    pick: (c) => {
+      // Jadwal needs the new city's month; saving it offline would leave Jadwal blank.
+      if (!navigator.onLine) return 'Sambungkan internet untuk mengganti kota.';
+      city = c;
+      store.set('bedug:city', c.id);
+      useCity();
+    },
+  });
 </script>
 
 <style>
-  #from { margin-top: 0.35rem; color: var(--on-panel-muted); font-size: var(--fs-sm); }
+  #from { margin: 0; color: var(--on-panel-muted); font-size: var(--fs-sm); }
   .hero { padding: 1.5rem 1.25rem 1.25rem; text-align: center; transition: background-color 250ms ease-out; }
   .hero svg { display: block; width: min(100%, 19rem); margin: 0 auto; }
   .face-disc { fill: var(--bg); stroke: var(--line); stroke-width: 1; transition: fill 250ms ease-out; }

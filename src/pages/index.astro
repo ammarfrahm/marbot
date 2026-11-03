@@ -3,8 +3,8 @@ import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
 import { PRAYERS, TIMES } from '../lib/schedule';
 import { SOURCES } from '../lib/sources';
 import Base from '../layouts/Base.astro';
+import CityDialog from '../components/CityDialog.astro';
 
-const regions = Object.groupBy(CITIES, (c) => c.region);
 const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 ---
 
@@ -12,7 +12,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name" tabindex="-1">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
-        <button type="button" id="change-city" class="pill" aria-label="Ubah kota">Ubah</button>
+        <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
       </div>
       <p id="today">&nbsp;</p>
       <p id="hijri"></p>
@@ -37,37 +37,14 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       }
     </ol>
 
-    <details id="settings" class="card">
-      <summary>Ubah kota atau sumber jadwal</summary>
-      <form onsubmit="return false">
-        <label>
-          Kota
-          <select id="city">
-            {
-              Object.entries(regions).map(([region, cities]) => (
-                <optgroup label={titleCase(region)}>
-                  {cities!.map((c) => (
-                    <option value={c.id} selected={c.id === DEFAULT_CITY_ID}>
-                      {titleCase(c.name)}
-                    </option>
-                  ))}
-                </optgroup>
-              ))
-            }
-          </select>
-        </label>
-        <button type="button" id="locate">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
-          Lokasi saya
-        </button>
-        <label>
-          Sumber
-          <select id="source">
-            {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
-          </select>
-        </label>
-      </form>
-    </details>
+    <CityDialog>
+      <label>
+        Sumber
+        <select id="source">
+          {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
+        </select>
+      </label>
+    </CityDialog>
 
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
@@ -79,9 +56,9 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
     import { store } from '../lib/store';
+    import { farNote, initCityDialog, locateNearest } from '../lib/city-dialog';
 
     const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-    const citySelect = $<HTMLSelectElement>('city');
     const sourceSelect = $<HTMLSelectElement>('source');
     const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
@@ -300,46 +277,29 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       chosen = true;
       cityNote = note;
       cityAction = undefined;
-      citySelect.value = c.id;
       $('city-name').textContent = titleCase(c.name);
       toSave = c.id;
       history.replaceState(null, '', `?kota=${c.id}`);
       refresh();
     }
 
-    function openSettings() {
-      $<HTMLDetailsElement>('settings').open = true;
-      citySelect.focus();
-    }
-
     function locate() {
-      if (!('geolocation' in navigator)) return setStatus('Browser ini tidak mendukung lokasi.');
       setStatus('Mencari lokasi…');
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => {
-          const { city: c, km } = nearestCity(coords.latitude, coords.longitude);
-          setCity(c, km > 150 ? `Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '');
-        },
-        (e) => {
-          const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
-          setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: openSettings });
-        },
-        { timeout: 10_000, maximumAge: 3_600_000 },
+      locateNearest().then(
+        ({ city: c, km }) => setCity(c, farNote(c, km)),
+        (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: cityDialog.open }),
       );
     }
 
-    citySelect.addEventListener('change', () => setCity(cityById(citySelect.value)!));
+    const cityDialog = initCityDialog({ current: () => city, pick: (c, note) => void setCity(c, note) });
     sourceSelect.addEventListener('change', () => {
       preferred = sourceSelect.value as SourceId;
       store.set('bedug:source', preferred);
       refresh();
     });
-    $('locate').addEventListener('click', locate);
-    $('change-city').addEventListener('click', openSettings);
     addEventListener('online', () => (loadFailed || partial) && refresh());
     $('status-action').addEventListener('click', () => statusAction?.());
 
-    citySelect.value = city.id;
     $('city-name').textContent = titleCase(city.name);
     sourceSelect.value = preferred;
     refresh();
@@ -347,7 +307,6 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
   </script>
 
   <style is:global>
-    .place { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
     #today, #hijri { color: var(--on-panel-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
     #today { margin-top: 0.35rem; }
     .hero { margin-top: 1.75rem; }
@@ -388,14 +347,6 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       border-radius: 50%;
       background: var(--gold);
     }
-    #settings { margin-top: 1.5rem; }
-    #settings summary { cursor: pointer; padding: 0.95rem 1rem; font-weight: 600; border-radius: var(--r-lg); }
-    #settings summary::marker { color: var(--muted); }
-    #settings form { display: grid; gap: 0.75rem; padding: 0 1rem 1rem; }
-    #settings label { display: grid; gap: 0.25rem; font-size: var(--fs-sm); color: var(--muted); }
-    #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
-    #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-    #locate .dot { fill: currentColor; stroke: none; }
     #status:has(> [hidden]) { margin: 0; }
     #status { margin: 0 0.25rem 0.5rem; color: var(--muted); font-size: var(--fs-sm); }
     #status button { width: auto; margin-left: 0.25rem; padding: 0; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }

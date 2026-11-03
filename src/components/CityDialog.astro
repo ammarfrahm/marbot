@@ -1,0 +1,54 @@
+---
+import { CITIES, titleCase } from '../lib/cities';
+
+const regions = Object.groupBy(CITIES, (c) => c.region);
+---
+
+<dialog id="settings" aria-labelledby="settings-title">
+  <form method="dialog">
+    <h2 id="settings-title">Ubah kota</h2>
+    <label>
+      Kota
+      <select id="city">
+        {
+          Object.entries(regions).map(([region, cities]) => (
+            <optgroup label={titleCase(region)}>
+              {cities!.map((c) => <option value={c.id}>{titleCase(c.name)}</option>)}
+            </optgroup>
+          ))
+        }
+      </select>
+    </label>
+    <button type="button" id="dlg-locate">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+      Lokasi saya
+    </button>
+    <p id="city-hint" role="status"></p>
+    <slot />
+    <button type="submit" id="dlg-done">Selesai</button>
+  </form>
+</dialog>
+
+<style is:global>
+  #settings {
+    width: min(24rem, calc(100% - 2rem));
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-lg);
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.25);
+  }
+  #settings::backdrop { background: rgb(0 0 0 / 0.5); }
+  #settings form { display: grid; gap: 0.75rem; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); }
+  #settings h2 { margin: 0; font-size: var(--fs-xl); }
+  #settings label { display: grid; gap: 0.25rem; font-size: var(--fs-sm); color: var(--muted); }
+  #settings p { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+  #settings p:empty { display: none; }
+  #dlg-locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; background: var(--card); border-color: var(--line); color: var(--ink); }
+  #dlg-locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  #dlg-locate .dot { fill: currentColor; stroke: none; }
+  @media (max-width: 39.99rem) {
+    #settings { width: 100%; max-width: none; margin: auto 0 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  }
+</style>
