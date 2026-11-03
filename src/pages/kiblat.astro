@@ -40,7 +40,7 @@ const at = (deg: number, r: number) => {
           CARDINALS.map(({ deg, label }) => {
             const p = at(deg, 76);
             return (
-              <text class:list={['cardinal', { north: deg === 0 }]} x={p.x} y={p.y} transform={`rotate(${deg} ${p.x} ${p.y})`}>
+              <text font-size="15" class:list={['cardinal', { north: deg === 0 }]} x={p.x} y={p.y} transform={`rotate(${deg} ${p.x} ${p.y})`}>
                 {label}
               </text>
             );
@@ -220,7 +220,7 @@ const at = (deg: number, r: number) => {
   .face-disc { fill: var(--bg); stroke: var(--line); stroke-width: 1; transition: fill 250ms ease-out; }
   .tick { stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; opacity: 0.55; }
   .tick.major { stroke: var(--ink); stroke-width: 2.5; opacity: 1; }
-  .cardinal { fill: var(--muted); font-size: 15px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  .cardinal { fill: var(--muted); font-weight: 600; text-anchor: middle; dominant-baseline: central; }
   .cardinal.north { fill: var(--ink); }
   .needle { fill: var(--accent); }
   .hub { fill: var(--card); stroke: var(--accent); stroke-width: 2.5; }

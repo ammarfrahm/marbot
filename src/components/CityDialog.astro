@@ -32,9 +32,9 @@ import { CITIES, cityLabel } from '../lib/cities';
     border-radius: var(--r-lg);
     background: var(--card);
     color: var(--ink);
-    box-shadow: 0 8px 32px rgb(0 0 0 / 0.25);
+    box-shadow: 0 8px 32px color-mix(in srgb, black 25%, transparent);
   }
-  #settings::backdrop { background: rgb(0 0 0 / 0.5); }
+  #settings::backdrop { background: color-mix(in srgb, black 50%, transparent); }
   #settings form { display: grid; gap: 0.75rem; padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom)); }
   #settings h2 { margin: 0; font-size: var(--fs-xl); }
   #settings label { display: grid; gap: 0.25rem; font-size: var(--fs-sm); color: var(--muted); }
