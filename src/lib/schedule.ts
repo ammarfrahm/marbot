@@ -22,9 +22,9 @@ export function cityDate(now: number, offset: UtcOffset, addDays = 0): string {
   return new Date(now + offset * 3_600_000 + addDays * DAY_MS).toISOString().slice(0, 10);
 }
 
-/** The city's wall-clock time ("HH:MM:SS") at instant `now`. */
+/** The city's wall-clock time ("HH:MM") at instant `now`. */
 export function cityClock(now: number, offset: UtcOffset): string {
-  return new Date(now + offset * 3_600_000).toISOString().slice(11, 19);
+  return new Date(now + offset * 3_600_000).toISOString().slice(11, 16);
 }
 
 /** The instant (ms) of a city wall-clock time. */

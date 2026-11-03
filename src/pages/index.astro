@@ -44,31 +44,34 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         }
       </ol>
 
-      <form id="settings" onsubmit="return false">
-        <label>
-          Kota
-          <select id="city">
-            {
-              Object.entries(regions).map(([region, cities]) => (
-                <optgroup label={titleCase(region)}>
-                  {cities!.map((c) => (
-                    <option value={c.id} selected={c.id === DEFAULT_CITY_ID}>
-                      {titleCase(c.name)}
-                    </option>
-                  ))}
-                </optgroup>
-              ))
-            }
-          </select>
-        </label>
-        <button type="button" id="locate">📍 Lokasi saya</button>
-        <label>
-          Sumber
-          <select id="source">
-            {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
-          </select>
-        </label>
-      </form>
+      <details id="settings">
+        <summary>Ubah kota atau sumber jadwal</summary>
+        <form onsubmit="return false">
+          <label>
+            Kota
+            <select id="city">
+              {
+                Object.entries(regions).map(([region, cities]) => (
+                  <optgroup label={titleCase(region)}>
+                    {cities!.map((c) => (
+                      <option value={c.id} selected={c.id === DEFAULT_CITY_ID}>
+                        {titleCase(c.name)}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              }
+            </select>
+          </label>
+          <button type="button" id="locate">📍 Lokasi saya</button>
+          <label>
+            Sumber
+            <select id="source">
+              {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
+            </select>
+          </label>
+        </form>
+      </details>
 
       <noscript><p>Bedug butuh JavaScript untuk menampilkan jadwal.</p></noscript>
     </main>
@@ -155,7 +158,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           if (token !== loadToken) return; // a newer city/source choice won
           days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
           const used = results[0].source;
-          setStatus(used.id === preferred ? `Sumber: ${used.label}` : `${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
+          setStatus(used.id === preferred ? '' : `${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
         } catch (e) {
           if (token !== loadToken) return;
           days = [];
@@ -304,7 +307,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       #times li.minor { font-size: 0.95rem; color: var(--muted); }
       #times li.past { opacity: 0.45; }
       #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 650; border-radius: 0.4rem; }
-      #settings { display: grid; gap: 0.75rem; }
+      #settings summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.5rem; }
+      #settings form { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
       #settings label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
       select, button {
         font: inherit;
