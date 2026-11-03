@@ -143,11 +143,12 @@ const at = (deg: number, r: number) => {
     $('bearing').textContent = aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`;
     $('turn').textContent = aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri';
     $('hint').textContent = aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.';
-    $('compass').hidden = true;
+    $<HTMLButtonElement>('compass').hidden = true;
   }
 
   const Orientation = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<PermissionState> } | undefined;
-  if ('ondeviceorientationabsolute' in window) {
+  // Not `in window`: TS's lib always declares it, so `in` would narrow the else branches to never.
+  if (window.ondeviceorientationabsolute !== undefined) {
     window.addEventListener('deviceorientationabsolute', onOrientation as EventListener);
   } else if (typeof Orientation?.requestPermission === 'function') {
     // iOS asks for permission, and only from a tap.
