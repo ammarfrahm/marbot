@@ -74,7 +74,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
   <script>
     import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
     import {
-      cityClock, cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
+      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
@@ -96,6 +96,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
     let loadToken = 0;
     let loadFailed = false;
+    let partial = false; // today loaded, but yesterday's or tomorrow's month is missing
 
     // Write only real changes: the hero is a live region and the page ticks every second.
     const setText = (id: string, text: string) => {
@@ -163,19 +164,24 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
       loadedFor = `${city.id}:${wanted[1]}`;
       loadFailed = false;
-      try {
-        const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
-        const results = await Promise.all(months.map((ym) => loadMonth(city, ym)));
-        if (token !== loadToken) return; // a newer city/source choice won
-        days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
-        const used = results[0].source;
+      partial = false;
+      const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
+      const merged = mergeMonths(wanted, wanted[1], months, await Promise.allSettled(months.map((ym) => loadMonth(city, ym))));
+      if (token !== loadToken) return; // a newer city/source choice won
+      if (merged.ok) {
+        days = merged.days;
+        partial = merged.partial;
+        const used = merged.today.source;
         if (used.id === preferred) quietStatus();
         else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
-      } catch (e) {
-        if (token !== loadToken) return;
+        // Online now: save next month too, so the last day of a month still works offline.
+        const [y, m] = wanted[1].split('-').map(Number);
+        const nextMonth = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
+        if (navigator.onLine && !months.includes(nextMonth)) loadMonth(city, nextMonth).catch(() => {});
+      } else {
         days = [];
         loadFailed = true;
-        setStatus(`${label(describeError(e))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
+        setStatus(`${label(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
       }
       tick();
@@ -201,7 +207,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       const arrived = last && now - last.at < ARRIVED_MS ? last : null;
       const shown = arrived ?? next;
       $('hero').dataset.state =
-        !next ? (loadFailed ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
+        !next ? (loadFailed || partial ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
 
       // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
       const listDate = shown?.date ?? today;
@@ -227,7 +233,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       if (!next) {
         setText('next-name', '…');
         setText('countdown', '--:--:--');
-        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : 'Memuat jadwal…');
+        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'Memuat jadwal…');
         document.title = 'Marbot · Jadwal Sholat';
         return;
       }

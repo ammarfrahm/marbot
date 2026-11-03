@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, type DaySchedule } from '../src/lib/schedule';
+import { cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, toInstant, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
   date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
@@ -77,5 +77,37 @@ describe('formatCountdown', () => {
     expect(formatCountdown(3_599_000)).toBe('00:59:59');
     expect(formatCountdown(500)).toBe('00:00:01');
     expect(formatCountdown(-5)).toBe('00:00:00');
+  });
+});
+
+describe('mergeMonths', () => {
+  // last day of November: yesterday and today are in 2026-11, tomorrow in 2026-12
+  const wanted = ['2026-11-29', '2026-11-30', '2026-12-01'];
+  const months = ['2026-11', '2026-12'];
+  const nov = { days: [day('2026-11-29'), day('2026-11-30'), day('2026-11-28')] };
+  const dec = { days: [day('2026-12-01'), day('2026-12-02')] };
+  const ok = (value: typeof nov): PromiseSettledResult<typeof nov> => ({ status: 'fulfilled', value });
+  const fail = (reason: unknown): PromiseSettledResult<typeof nov> => ({ status: 'rejected', reason });
+
+  it('merges every month that loaded and keeps only the wanted days', () => {
+    const m = mergeMonths(wanted, '2026-11-30', months, [ok(nov), ok(dec)]);
+    expect(m).toMatchObject({ ok: true, partial: false, today: nov });
+    expect(m.ok && m.days.map((d) => d.date)).toEqual(['2026-11-29', '2026-11-30', '2026-12-01']);
+  });
+
+  it('shows today when only next month is missing', () => {
+    const m = mergeMonths(wanted, '2026-11-30', months, [ok(nov), fail(new Error('offline'))]);
+    expect(m).toMatchObject({ ok: true, partial: true });
+    expect(m.ok && m.days.map((d) => d.date)).toEqual(['2026-11-29', '2026-11-30']);
+  });
+
+  it('fails with the reason when today\'s month is missing', () => {
+    const err = new Error('offline');
+    expect(mergeMonths(wanted, '2026-11-30', months, [fail(err), ok(dec)])).toEqual({ ok: false, error: err });
+  });
+
+  it('handles a single month', () => {
+    const m = mergeMonths(['2026-11-03'], '2026-11-03', ['2026-11'], [ok(nov)]);
+    expect(m).toMatchObject({ ok: true, partial: false });
   });
 });

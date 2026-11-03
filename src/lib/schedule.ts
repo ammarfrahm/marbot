@@ -57,3 +57,26 @@ export function formatCountdown(ms: number): string {
   const parts = [s / 3600, (s % 3600) / 60, s % 60].map((n) => String(Math.floor(n)).padStart(2, '0'));
   return parts.join(':');
 }
+
+export type MergedMonths<T> = { ok: true; days: DaySchedule[]; today: T; partial: boolean } | { ok: false; error: unknown };
+
+/**
+ * Combine the months fetched for yesterday, today and tomorrow (`months[i]` ↔ `results[i]`).
+ * Only today's month is essential: a missing neighbour is `partial`, its days are simply absent.
+ */
+export function mergeMonths<T extends { days: DaySchedule[] }>(
+  wanted: string[],
+  todayDate: string,
+  months: string[],
+  results: PromiseSettledResult<T>[],
+): MergedMonths<T> {
+  const own = results[months.indexOf(todayDate.slice(0, 7))];
+  if (own.status === 'rejected') return { ok: false, error: own.reason };
+  const loaded = results.filter((r) => r.status === 'fulfilled');
+  return {
+    ok: true,
+    days: loaded.flatMap((r) => r.value.days).filter((d) => wanted.includes(d.date)),
+    today: own.value,
+    partial: loaded.length < results.length,
+  };
+}
