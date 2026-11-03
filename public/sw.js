@@ -1,8 +1,8 @@
-// Bedug's service worker: every built file is cached at install, so all tabs open offline.
+// Marbot's service worker: every built file is cached at install, so all tabs open offline.
 // The build replaces the placeholder below with the file list and a hash of their contents;
 // a new deploy changes the hash, which installs a fresh cache and drops the old one.
 const { version, urls } = /*PRECACHE*/ { version: 'dev', urls: [] };
-const CACHE = `bedug-${version}`;
+const CACHE = `marbot-${version}`;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(urls)).then(() => self.skipWaiting()));

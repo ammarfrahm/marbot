@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bedug",
+  "name": "marbot",
   "compatibility_date": "2026-11-01",
   "assets": { "directory": "./dist" },
-  "routes": [{ "pattern": "bedug.ammar.id", "custom_domain": true }]
+  "routes": [{ "pattern": "marbot.ammar.id", "custom_domain": true }]
 }

@@ -4,7 +4,7 @@
 // Usage: node scripts/build-cities.mjs
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
-const UA = 'bedug-city-index/1.0 (+https://bedug.ammar.id)';
+const UA = 'marbot-city-index/1.0 (+https://marbot.ammar.id)';
 const CACHE = new URL('./.cache/', import.meta.url);
 const OUT = new URL('../src/data/cities.json', import.meta.url);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

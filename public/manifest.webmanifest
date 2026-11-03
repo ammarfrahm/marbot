@@ -1,6 +1,6 @@
 {
-  "name": "Bedug · Jadwal Sholat",
-  "short_name": "Bedug",
+  "name": "Marbot · Jadwal Sholat",
+  "short_name": "Marbot",
   "description": "Jadwal sholat, arah kiblat, dan kalender Hijriah.",
   "lang": "id",
   "start_url": "/",

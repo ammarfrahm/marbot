@@ -28,6 +28,6 @@ const precache = {
 };
 
 export default defineConfig({
-  site: 'https://bedug.ammar.id',
+  site: 'https://marbot.ammar.id',
   integrations: [precache],
 });

@@ -14,7 +14,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
 });
 ---
 
-<Base title="Bedug · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
+<Base title="Marbot · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
@@ -86,7 +86,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
       </form>
     </details>
 
-    <noscript><p>Bedug butuh JavaScript untuk menampilkan jadwal.</p></noscript>
+    <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
   <script>
     import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
@@ -235,21 +235,21 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         setText('next-name', label(arrived.name));
         setText('countdown', 'Sudah masuk');
         setText('next-at', `sejak ${arrived.time} ${zone}`);
-        document.title = `${label(arrived.name)} sudah masuk · Bedug`;
+        document.title = `${label(arrived.name)} sudah masuk · Marbot`;
         return;
       }
       if (!next) {
         setText('next-name', '…');
         setText('countdown', '--:--:--');
         setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : 'Memuat jadwal…');
-        document.title = 'Bedug · Jadwal Sholat';
+        document.title = 'Marbot · Jadwal Sholat';
         return;
       }
       const left = formatCountdown(next.at - now);
       setText('next-name', label(next.name));
       setText('countdown', left);
       setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
-      document.title = `${left} · ${label(next.name)} · Bedug`;
+      document.title = `${left} · ${label(next.name)} · Marbot`;
     }
 
     /** The status when nothing went wrong. */
