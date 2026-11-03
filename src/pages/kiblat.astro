@@ -243,6 +243,7 @@ const at = (deg: number, r: number) => {
     // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
     if (navigator.onLine) store.set(storeKey('city'), c.id);
     useCity();
+    if (!navigator.onLine) say(`Kiblat dihitung dari ${titleCase(c.name)}. Kota belum disimpan; pilih lagi saat online.`);
     // A location fix replaced the city: the same button goes back to it.
     if (back) setUndo({ label: backTo(back.name), run: () => pickCity(back) });
   }
