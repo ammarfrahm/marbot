@@ -44,6 +44,9 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
         ))
       }
     </nav>
+    <script>
+      if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+    </script>
 
     <style is:global>
       :root {
