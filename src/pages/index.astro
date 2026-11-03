@@ -348,12 +348,12 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
   <style is:global>
     .place { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
-    #today, #hijri { color: var(--on-panel-muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    #today, #hijri { color: var(--on-panel-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
     #today { margin-top: 0.35rem; }
     .hero { margin-top: 1.75rem; }
-    #next-name { font-size: 1.25rem; font-weight: 600; }
+    #next-name { font-size: var(--fs-xl); font-weight: 600; }
     #countdown {
-      font-size: clamp(3rem, 15vw, 3.75rem);
+      font-size: var(--fs-display);
       font-weight: 300;
       line-height: 1.1;
       letter-spacing: -0.02em;
@@ -362,20 +362,20 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     #next-at { color: var(--on-panel-muted); font-variant-numeric: tabular-nums; }
     [data-state='soon'] #countdown { font-weight: 600; }
     [data-state='soon'] #next-at { color: var(--on-panel); }
-    [data-state='now'] #countdown { font-size: clamp(2.25rem, 10vw, 2.75rem); font-weight: 400; }
+    [data-state='now'] #countdown { font-size: var(--fs-display-sm); font-weight: 400; }
     #times { list-style: none; margin: 0; padding: 0.35rem; }
     #times li {
       position: relative;
       display: flex;
       justify-content: space-between;
       padding: 0.8rem 0.9rem 0.8rem 1.6rem;
-      font-size: 1.1rem;
+      font-size: var(--fs-lg);
       font-variant-numeric: tabular-nums;
     }
     #times li + li { box-shadow: 0 -1px 0 var(--line); }
-    #times li.minor { font-size: 0.95rem; color: var(--muted); }
+    #times li.minor { font-size: var(--fs-md); color: var(--muted); }
     #times li.past { color: var(--muted); }
-    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-radius: 0.65rem; box-shadow: none; }
+    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-radius: var(--r-sm); box-shadow: none; }
     #times li.next + li { box-shadow: none; }
     #times li.next::before {
       content: '';
@@ -389,15 +389,15 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       background: var(--gold);
     }
     #settings { margin-top: 1.5rem; }
-    #settings summary { cursor: pointer; padding: 0.95rem 1rem; font-weight: 600; border-radius: 1rem; }
+    #settings summary { cursor: pointer; padding: 0.95rem 1rem; font-weight: 600; border-radius: var(--r-lg); }
     #settings summary::marker { color: var(--muted); }
     #settings form { display: grid; gap: 0.75rem; padding: 0 1rem 1rem; }
-    #settings label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+    #settings label { display: grid; gap: 0.25rem; font-size: var(--fs-sm); color: var(--muted); }
     #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
     #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
     #locate .dot { fill: currentColor; stroke: none; }
     #status:has(> [hidden]) { margin: 0; }
-    #status { margin: 0 0.25rem 0.5rem; color: var(--muted); font-size: 0.9rem; }
-    #status button { width: auto; margin-left: 0.25rem; padding: 0; border: 0; background: none; color: var(--accent); font-size: 0.9rem; text-decoration: underline; }
+    #status { margin: 0 0.25rem 0.5rem; color: var(--muted); font-size: var(--fs-sm); }
+    #status button { width: auto; margin-left: 0.25rem; padding: 0; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
   </style>
 </Base>
