@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
-    "test": "vitest run --maxWorkers=2"
+    "test": "vitest run --maxWorkers=2",
+    "cities": "node scripts/build-cities.mjs"
   },
   "dependencies": {
     "astro": "^7.4.4"
