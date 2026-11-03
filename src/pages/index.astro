@@ -74,7 +74,12 @@ import CityDialog from '../components/CityDialog.astro';
       cityNote = `Jadwal ${titleCase(linked.name)} dari tautan.`;
       cityAction = {
         label: 'Simpan sebagai kota saya',
-        run: () => { store.set(storeKey('city'), linked.id); cityNote = ''; cityAction = undefined; quietStatus(); },
+        run: () => {
+          store.set(storeKey('city'), linked.id);
+          cityNote = `${titleCase(linked.name)} disimpan sebagai kota Anda.`; // stays until the next city change
+          cityAction = undefined;
+          quietStatus();
+        },
       };
     }
     let preferred: SourceId = store.get(storeKey('source')) === 'aladhan' ? 'aladhan' : 'myquran';
