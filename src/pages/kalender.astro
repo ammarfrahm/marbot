@@ -19,7 +19,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
 
   <section class="month card" aria-labelledby="month-title">
     <div class="month-head">
-      <button type="button" id="prev" aria-label="Bulan sebelumnya">
+      <button type="button" id="prev" aria-label="Bulan sebelumnya" aria-keyshortcuts="ArrowLeft">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
       <div class="month-title">
@@ -29,7 +29,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
         </div>
         <button type="button" id="this-month" class="pill" hidden>Kembali ke bulan ini</button>
       </div>
-      <button type="button" id="next" aria-label="Bulan berikutnya">
+      <button type="button" id="next" aria-label="Bulan berikutnya" aria-keyshortcuts="ArrowRight">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
       </button>
     </div>
@@ -54,6 +54,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   import { addDays, formatHijri, HIJRI_MONTHS, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
   import { cityDate } from '../lib/schedule';
   import { $ } from '../lib/dom';
+  import { monthStep } from '../lib/keys';
   import { store, storeKey } from '../lib/store';
 
   const city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
@@ -160,6 +161,11 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   $('prev').addEventListener('click', () => shown && renderMonth(shiftMonth(shown, -1) ?? shown));
   $('next').addEventListener('click', () => shown && renderMonth(shiftMonth(shown, 1) ?? shown));
   $('this-month').addEventListener('click', render);
+  // ← and → page the months; a disabled end button ignores the click.
+  document.addEventListener('keydown', (e) => {
+    const step = monthStep(e);
+    if (step) $<HTMLButtonElement>(step < 0 ? 'prev' : 'next').click();
+  });
   // An app left open overnight should show the new day when it comes back.
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && cityDate(Date.now(), city.utcOffset) !== today) render();
