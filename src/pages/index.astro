@@ -265,7 +265,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       if (!next) {
         setText('next-name', '…');
         setCountdown('‒‒:‒‒:‒‒', true);
-        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'besok pukul ‒‒:‒‒ WIB');
+        setText('next-at', loadFailed ? 'Belum bisa dimuat' : partial ? 'Besok belum tersedia' : 'besok pukul ‒‒:‒‒ WIB');
         document.title = 'Jadwal Sholat · Marbot';
         return;
       }
