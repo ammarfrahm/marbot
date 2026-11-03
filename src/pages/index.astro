@@ -268,7 +268,8 @@ import PanelBoot from '../components/PanelBoot.astro';
         return;
       }
       if (!next) {
-        setText('next-name', '…');
+        // Partial after Isya: tomorrow's month is the one missing, so the next prayer is certainly Subuh.
+        setText('next-name', !loadFailed && partial && last?.name === 'isya' ? 'Subuh' : '…');
         setCountdown('‒‒:‒‒:‒‒', false, true);
         setText('next-at', loadFailed ? 'Belum bisa dimuat' : partial ? 'Besok belum tersedia' : `pukul ‒‒:‒‒ ${zone}`);
         document.title = 'Jadwal Sholat · Marbot';
