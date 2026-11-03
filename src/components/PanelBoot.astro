@@ -1,0 +1,24 @@
+---
+import source from '../lib/panel-boot.js?raw';
+import table from '../data/hijri.json';
+import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
+import { HIJRI_MONTHS } from '../lib/hijri';
+import { ZONE_IANA, ZONE_LABEL } from '../lib/schedule';
+
+/** `fill` maps an element id to a line: name, from, today, hijri or greg. Place it right after those elements. */
+const { fill, linked = false } = Astro.props as { fill: Record<string, string>; linked?: boolean };
+const city = CITIES.find((c) => c.id === DEFAULT_CITY_ID)!;
+const dates = Object.values(fill).some((line) => line === 'today' || line === 'hijri' || line === 'greg');
+const cfg = {
+  fill,
+  linked,
+  def: { id: city.id, name: titleCase(city.name), offset: city.utcOffset },
+  months: HIJRI_MONTHS,
+  starts: dates ? table.starts : [],
+  first: table.first,
+  zones: ZONE_LABEL,
+  iana: ZONE_IANA,
+};
+---
+
+<script is:inline set:html={`${source}\npanelBoot(${JSON.stringify(cfg)});`}></script>

@@ -4,6 +4,7 @@ import { PRAYERS, capitalise, TIMES } from '../lib/schedule';
 import { SOURCES } from '../lib/sources';
 import Base from '../layouts/Base.astro';
 import CityDialog from '../components/CityDialog.astro';
+import PanelBoot from '../components/PanelBoot.astro';
 
 ---
 
@@ -17,9 +18,10 @@ import CityDialog from '../components/CityDialog.astro';
       <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
-        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">--:--:--</span><span id="cd-lagi" hidden> lagi</span></p>
-        <p id="next-at">Memuat jadwal…</p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi"> lagi</span></p>
+        <p id="next-at">besok pukul ‒‒:‒‒ WIB</p>
       </section>
+      <PanelBoot linked fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
     </Fragment>
 
     <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
@@ -50,21 +52,21 @@ import CityDialog from '../components/CityDialog.astro';
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
   <script>
-    import { cityById, DEFAULT_CITY_ID, nearestCity, offerLinked, titleCase, type City } from '../lib/cities';
+    import { cityById, DEFAULT_CITY_ID, offerLinked, titleCase, type City } from '../lib/cities';
     import {
       cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, capitalise, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName, type UtcOffset,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
-    import { store, storeKey } from '../lib/store';
+    import { saveCity, savedCity, store, storeKey } from '../lib/store';
     import { initCityDialog, locatedChange, locateNearest } from '../lib/city-dialog';
 
     const sourceSelect = $<HTMLSelectElement>('source');
 
     // A shared link (?kota=<id>) is shown for this view and never stored unasked.
     const linked = cityById(new URLSearchParams(location.search).get('kota'));
-    const stored = cityById(store.get(storeKey('city')));
+    const stored = savedCity();
     let city: City = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
     let toSave: string | null = null; // a picked city is stored only once its schedule has loaded
     let chosen = !!stored || !!linked; // until then, offer geolocation
@@ -75,7 +77,7 @@ import CityDialog from '../components/CityDialog.astro';
       cityAction = {
         label: 'Simpan sebagai kota saya',
         run: () => {
-          store.set(storeKey('city'), linked.id);
+          saveCity(linked);
           cityNote = `${titleCase(linked.name)} disimpan sebagai kota Anda.`; // stays until the next city change
           cityAction = undefined;
           quietStatus();
@@ -181,7 +183,7 @@ import CityDialog from '../components/CityDialog.astro';
       if (merged.ok) {
         days = merged.days;
         partial = merged.partial;
-        if (toSave === city.id) store.set(storeKey('city'), toSave);
+        if (toSave === city.id) saveCity(city);
         toSave = null;
         const used = merged.today.source;
         setText('source-note', `Sumber: ${used.credit}`);
@@ -195,7 +197,7 @@ import CityDialog from '../components/CityDialog.astro';
         days = [];
         setText('source-note', '\u00a0');
         loadFailed = true;
-        const saved = cityById(store.get(storeKey('city')));
+        const saved = savedCity();
         if (!navigator.onLine && saved && saved.id !== city.id) {
           setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
             label: `Kembali ke ${titleCase(saved.name)}`,
@@ -261,8 +263,8 @@ import CityDialog from '../components/CityDialog.astro';
       }
       if (!next) {
         setText('next-name', '…');
-        setCountdown('--:--:--');
-        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'Memuat jadwal…');
+        setCountdown('‒‒:‒‒:‒‒', true);
+        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'besok pukul ‒‒:‒‒ WIB');
         document.title = 'Jadwal Sholat · Marbot';
         return;
       }
@@ -362,9 +364,8 @@ import CityDialog from '../components/CityDialog.astro';
       background: var(--gold);
     }
     #list-title { margin-top: 0; }
-    #source-note { margin: 0.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
-    #status:has(> [hidden]) { margin: 0; }
-    #status { margin: 0.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
+    #source-note { margin: 0.25rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
+    #status { margin: 0.75rem 0.25rem 0; min-height: 3em; color: var(--muted); font-size: var(--fs-sm); }
     #status button { width: auto; margin: -0.75rem 0 -0.75rem 0.25rem; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
   </style>
 </Base>

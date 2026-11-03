@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import PanelBoot from '../components/PanelBoot.astro';
 
 // Six empty rows hold the grid's height until the script fills it, so nothing below jumps.
 const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
@@ -10,6 +11,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   <Fragment slot="header">
     <h1 id="hijri-today">&nbsp;</h1>
     <p id="greg-today">&nbsp;</p>
+    <PanelBoot fill={{ 'hijri-today': 'hijri', 'greg-today': 'greg' }} />
   </Fragment>
 
   <section class="upcoming" aria-labelledby="upcoming-title">
@@ -55,9 +57,9 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   import { cityDate } from '../lib/schedule';
   import { $ } from '../lib/dom';
   import { monthStep } from '../lib/keys';
-  import { store, storeKey } from '../lib/store';
+  import { savedCity } from '../lib/store';
 
-  const city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
+  const city = savedCity() ?? cityById(DEFAULT_CITY_ID)!;
   const DAY = 86_400_000;
 
   /** Format a yyyy-mm-dd date; the date is a calendar day, so read it in UTC. */

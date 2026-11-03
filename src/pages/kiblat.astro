@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import PanelBoot from '../components/PanelBoot.astro';
 import CityDialog from '../components/CityDialog.astro';
 import LocateButton from '../components/LocateButton.astro';
 
@@ -24,6 +25,7 @@ const at = (deg: number, r: number) => {
       <p id="from">&nbsp;</p>
       <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
     </div>
+    <PanelBoot fill={{ from: 'from' }} />
   </Fragment>
 
   <section class="hero card" id="hero" data-mode="static">
@@ -87,7 +89,7 @@ const at = (deg: number, r: number) => {
 <script>
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase, type City } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
-  import { store, storeKey } from '../lib/store';
+  import { saveCity, savedCity } from '../lib/store';
   import { $, setText } from '../lib/dom';
   import { geoReason } from '../lib/geo';
   import { initCityDialog } from '../lib/city-dialog';
@@ -99,7 +101,7 @@ const at = (deg: number, r: number) => {
   const NORTH_TIP = 'Tidak tahu arah utara? Matahari terbit di timur.';
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
 
-  let city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
+  let city = savedCity() ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
   let noCompass = false; // a compass listener is on, but no heading arrived
   let waitTimer: number | undefined;
@@ -241,7 +243,7 @@ const at = (deg: number, r: number) => {
   function pickCity(c: City, back?: City) {
     city = c;
     // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
-    if (navigator.onLine) store.set(storeKey('city'), c.id);
+    if (navigator.onLine) saveCity(c);
     useCity();
     if (!navigator.onLine) say(`Kiblat dihitung dari ${titleCase(c.name)}. Kota belum disimpan; pilih lagi saat online.`);
     // A location fix replaced the city: the same button goes back to it.
@@ -276,7 +278,7 @@ const at = (deg: number, r: number) => {
   #turn { color: var(--muted); }
 
   .hero[data-mode='static'] ~ .calibrate { display: none; } /* calibration is for a live compass */
-  #hint { margin: 1rem 0.25rem; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; min-height: 3em; }
+  #hint { margin: 1rem 0.25rem; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; min-height: 4.5em; }
   .actions { display: grid; gap: 0.75rem; }
 
   .facts { margin: 1.5rem 0 0; padding: 0 1rem; }
