@@ -56,11 +56,10 @@ import CityDialog from '../components/CityDialog.astro';
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
-    import { setText } from '../lib/dom';
+    import { $, setText } from '../lib/dom';
     import { store, storeKey } from '../lib/store';
     import { farNote, initCityDialog, locateNearest } from '../lib/city-dialog';
 
-    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
     const sourceSelect = $<HTMLSelectElement>('source');
 
     // A shared link (?kota=<id>) is shown for this view and never stored unasked.

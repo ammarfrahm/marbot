@@ -89,11 +89,10 @@ const at = (deg: number, r: number) => {
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
   import { store, storeKey } from '../lib/store';
-  import { setText } from '../lib/dom';
+  import { $, setText } from '../lib/dom';
   import { geoReason } from '../lib/geo';
   import { initCityDialog } from '../lib/city-dialog';
 
-  const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
   const hero = $<HTMLElement>('hero');
   const dial = $<SVGGElement>('dial');
   const cardinals = [...document.querySelectorAll('.cardinal')];

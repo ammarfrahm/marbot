@@ -25,9 +25,6 @@ const { title = 'Ubah kota' } = Astro.props;
 <p id="city-announce" class="sr-only" role="status"></p>
 
 <style is:global>
-  #settings input { font: inherit; font-size: var(--fs-md); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 0.65rem 0.75rem; width: 100%; }
-  #settings input::placeholder { color: var(--muted); opacity: 1; }
-  #settings input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #settings {
     width: min(24rem, calc(100% - 2rem));
     padding: 0;
