@@ -134,10 +134,10 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
         row = document.createElement('tr');
       }
     }
-    if (row.children.length) {
-      while (row.children.length < 7) row.append(document.createElement('td'));
-      rows.push(row);
-    }
+    if (row.children.length) rows.push(row);
+    // Always six rows, so the card is the same height in every month.
+    while (rows.length < 6) rows.push(document.createElement('tr'));
+    for (const r of rows) while (r.children.length < 7) r.append(document.createElement('td'));
     body.replaceChildren(...rows);
     $('month-marked').replaceChildren(...withNote([...marked.values()], false));
   }
