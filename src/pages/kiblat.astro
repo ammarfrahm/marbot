@@ -64,6 +64,7 @@ const at = (deg: number, r: number) => {
   </section>
 
   <p id="hint" role="status">Memuat…</p>
+  <p id="announce" class="sr-only" aria-live="polite"></p>
   <div class="actions">
     <button type="button" id="compass" hidden>Nyalakan kompas</button>
     <button type="button" id="locate">
@@ -87,7 +88,7 @@ const at = (deg: number, r: number) => {
 
 <script>
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
-  import { KAABA, qiblaBearing, turnTo } from '../lib/qibla';
+  import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
   import { store } from '../lib/store';
   import { initCityDialog } from '../lib/city-dialog';
 
@@ -96,6 +97,12 @@ const at = (deg: number, r: number) => {
   const dial = $<SVGGElement>('dial');
   const ALIGNED_DEG = 3;
   const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
+
+  /** Writing identical text still makes screen readers and layout work; skip it. */
+  const setText = (id: string, text: string) => {
+    const node = $(id);
+    if (node.textContent !== text) node.textContent = text;
+  };
 
   let city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
@@ -112,11 +119,11 @@ const at = (deg: number, r: number) => {
   }
 
   function showStatic() {
-    $('bearing').textContent = `${Math.round(bearing)}°`;
-    $('turn').textContent = 'dari utara';
-    $('hint').textContent = noCompass
+    setText('bearing', `${Math.round(bearing)}°`);
+    setText('turn', 'dari utara');
+    setText('hint', noCompass
       ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara.`
-      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
+      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.');
   }
 
   // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
@@ -126,6 +133,10 @@ const at = (deg: number, r: number) => {
   let sy = 0;
   let shown = 0; // the dial's rotation, unwrapped so it never spins the long way round
   let aligned = false;
+
+  let haveHeading = false;
+  let said: Said | null = null;
+  let frame = 0;
 
   function onOrientation(e: CompassEvent) {
     let heading: number | null = null;
@@ -137,9 +148,14 @@ const at = (deg: number, r: number) => {
     heading += screen.orientation?.angle ?? 0;
 
     const a = heading * (Math.PI / 180);
-    const first = hero.dataset.mode === 'static';
-    sx = first ? Math.cos(a) : sx * 0.8 + Math.cos(a) * 0.2;
-    sy = first ? Math.sin(a) : sy * 0.8 + Math.sin(a) * 0.2;
+    sx = haveHeading ? sx * 0.8 + Math.cos(a) * 0.2 : Math.cos(a);
+    sy = haveHeading ? sy * 0.8 + Math.sin(a) * 0.2 : Math.sin(a);
+    haveHeading = true;
+    frame ||= requestAnimationFrame(render); // events outrun the screen; draw the latest once per frame
+  }
+
+  function render() {
+    frame = 0;
     const smooth = (Math.atan2(sy, sx) * (180 / Math.PI) + 360) % 360;
     shown += turnTo(shown, smooth);
     dial.setAttribute('transform', `rotate(${(-shown).toFixed(2)} 120 120)`);
@@ -149,10 +165,14 @@ const at = (deg: number, r: number) => {
     if (nowAligned && !aligned) navigator.vibrate?.(40);
     aligned = nowAligned;
     hero.dataset.mode = aligned ? 'aligned' : 'live';
-    $('bearing').textContent = aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`;
-    $('turn').textContent = aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri';
-    $('hint').textContent = aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.';
+    setText('bearing', aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`);
+    setText('turn', aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri');
+    setText('hint', aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.');
     $<HTMLButtonElement>('compass').hidden = true;
+
+    const spoken = announceTurn(said, turn, aligned, Date.now());
+    said = spoken.next;
+    if (spoken.say) $('announce').textContent = spoken.say;
   }
 
   // Some desktops expose the event but never fire it with a heading; say so after a few seconds.
