@@ -89,7 +89,7 @@ const at = (deg: number, r: number) => {
 <script>
   import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
-  import { store } from '../lib/store';
+  import { store, storeKey } from '../lib/store';
   import { initCityDialog } from '../lib/city-dialog';
 
   const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
@@ -104,7 +104,7 @@ const at = (deg: number, r: number) => {
     if (node.textContent !== text) node.textContent = text;
   };
 
-  let city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+  let city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
   let noCompass = false; // a compass listener is on, but no heading arrived
   let waitTimer: number | undefined;
@@ -226,7 +226,7 @@ const at = (deg: number, r: number) => {
       // Jadwal needs the new city's month; saving it offline would leave Jadwal blank.
       if (!navigator.onLine) return 'Sambungkan internet untuk mengganti kota.';
       city = c;
-      store.set('bedug:city', c.id);
+      store.set(storeKey('city'), c.id);
       useCity();
     },
   });

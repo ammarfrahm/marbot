@@ -53,10 +53,10 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   import { cityById, DEFAULT_CITY_ID } from '../lib/cities';
   import { addDays, formatHijri, HIJRI_MONTHS, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
   import { cityDate } from '../lib/schedule';
-  import { store } from '../lib/store';
+  import { store, storeKey } from '../lib/store';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-  const city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+  const city = cityById(store.get(storeKey('city'))) ?? cityById(DEFAULT_CITY_ID)!;
   const DAY = 86_400_000;
 
   /** Format a yyyy-mm-dd date; the date is a calendar day, so read it in UTC. */
