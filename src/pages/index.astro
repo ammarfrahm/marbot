@@ -2,9 +2,16 @@
 import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
 import { PRAYERS, TIMES } from '../lib/schedule';
 import { SOURCES } from '../lib/sources';
+import '@fontsource-variable/familjen-grotesk/wght.css';
 
 const regions = Object.groupBy(CITIES, (c) => c.region);
 const label = (t: string) => t[0].toUpperCase() + t.slice(1);
+
+// The drum's pegs, clockwise from the top; they light up as the next prayer nears.
+const PEGS = Array.from({ length: 36 }, (_, i) => {
+  const a = (i / 36) * 2 * Math.PI - Math.PI / 2;
+  return { x: +(120 + 107 * Math.cos(a)).toFixed(2), y: +(120 + 107 * Math.sin(a)).toFixed(2) };
+});
 ---
 
 <!doctype html>
@@ -16,12 +23,12 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     <meta name="description" content="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." />
     <meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16110c" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥁</text></svg>" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
     <main>
       <header>
-        <p class="brand">Bedug</p>
+        <p class="brand"><img src="/favicon.svg" alt="" width="20" height="20" />Bedug</p>
         <div class="place">
           <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
           <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
@@ -30,9 +37,19 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       </header>
 
       <section class="hero" aria-live="polite" aria-atomic="true">
-        <p class="eyebrow">Menuju <strong id="next-name">…</strong></p>
-        <p id="countdown" role="timer" aria-live="off">--:--:--</p>
-        <p id="next-at">Memuat jadwal…</p>
+        <div class="drum">
+          <svg viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="rim" cx="120" cy="120" r="119" />
+            <circle class="skin" cx="120" cy="120" r="97" />
+            <circle class="skin-ring" cx="120" cy="120" r="89" />
+            <g id="pegs">{PEGS.map((p) => <circle cx={p.x} cy={p.y} r="3.2" />)}</g>
+          </svg>
+          <div class="face">
+            <p id="next-name">…</p>
+            <p id="countdown" role="timer" aria-live="off">--:--:--</p>
+            <p id="next-at">Memuat jadwal…</p>
+          </div>
+        </div>
       </section>
 
       <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
@@ -68,7 +85,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
               }
             </select>
           </label>
-          <button type="button" id="locate">📍 Lokasi saya</button>
+          <button type="button" id="locate">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+            Lokasi saya
+          </button>
           <label>
             Sumber
             <select id="source">
@@ -84,7 +104,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     <script>
       import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
       import {
-        cityClock, cityDate, formatCountdown, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
+        cityClock, cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
       } from '../lib/schedule';
       import { SOURCES, type Source, type SourceId } from '../lib/sources';
 
@@ -159,8 +179,9 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       async function refresh() {
         const token = ++loadToken;
         const now = Date.now();
-        const wanted = [cityDate(now, city.utcOffset), cityDate(now, city.utcOffset, 1)];
-        loadedFor = `${city.id}:${wanted[0]}`;
+        // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
+        const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
+        loadedFor = `${city.id}:${wanted[1]}`;
         loadFailed = false;
         try {
           const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
@@ -178,6 +199,16 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           setTimeout(() => token === loadToken && refresh(), 60_000);
         }
         tick();
+      }
+
+      const pegs = [...document.querySelectorAll<SVGCircleElement>('#pegs circle')];
+      let litPegs = -1;
+      /** Light the share of pegs that matches the time already passed since the last prayer. */
+      function lightPegs(fraction: number) {
+        const lit = Math.floor(Math.min(1, Math.max(0, fraction)) * pegs.length);
+        if (lit === litPegs) return;
+        litPegs = lit;
+        pegs.forEach((peg, i) => peg.classList.toggle('lit', i < lit));
       }
 
       function tick() {
@@ -205,6 +236,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
         }
 
+        const last = lastPrayer(days, now, city.utcOffset);
+        lightPegs(last && next ? (now - last.at) / (next.at - last.at) : 0);
         if (!next) {
           setText('next-name', '…');
           setText('countdown', '--:--:--');
@@ -284,6 +317,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         --line: #e2d7c5;
         --accent: #8f3f12;
         --accent-soft: #ead6c2;
+        --skin: #efe2c8;
+        --rim: #6f2e17;
+        --peg: #9a5a37;
+        --peg-on: #f2c46b;
       }
       @media (prefers-color-scheme: dark) {
         :root {
@@ -293,14 +330,20 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           --line: #33291f;
           --accent: #e8955b;
           --accent-soft: #3a2616;
+          --skin: #2a1f15;
+          --rim: #5a2a16;
+          --peg: #7a4a2c;
+          --peg-on: #f0b660;
         }
       }
       * { box-sizing: border-box; }
+      html { scrollbar-color: var(--line) var(--bg); caret-color: var(--accent); accent-color: var(--accent); }
+      ::selection { background: var(--accent-soft); color: var(--ink); }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font: 16px/1.5 'Familjen Grotesk Variable', system-ui, sans-serif;
       }
       main {
         max-width: 28rem;
@@ -308,19 +351,27 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         padding: 2rem 1rem 3rem;
       }
       header { text-align: center; }
-      .brand { margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
+      .brand { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
       .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
       h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
       #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
       #today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-      .hero { text-align: center; margin: 2.5rem 0 2rem; }
+      .hero { margin: 2rem 0 1.5rem; }
       .hero p { margin: 0; }
-      .eyebrow { color: var(--muted); }
-      .eyebrow strong { color: var(--ink); }
+      .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
+      .drum > * { grid-area: 1 / 1; }
+      .drum svg { width: 100%; height: 100%; }
+      .rim { fill: var(--rim); }
+      .skin { fill: var(--skin); }
+      .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+      #pegs circle { fill: var(--peg); transition: fill 250ms ease-out; }
+      #pegs circle.lit { fill: var(--peg-on); }
+      .face { text-align: center; }
+      #next-name { font-size: 1.35rem; font-weight: 600; }
       #countdown {
-        font-size: clamp(3.25rem, 17vw, 5.5rem);
+        font-size: clamp(2.75rem, 13vw, 4rem);
         font-weight: 650;
-        line-height: 1.1;
+        line-height: 1.05;
         letter-spacing: -0.02em;
         font-variant-numeric: tabular-nums;
       }
@@ -351,9 +402,12 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         padding: 0.55rem 0.6rem;
         width: 100%;
       }
+      #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
+      #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+      #locate .dot { fill: currentColor; stroke: none; }
       button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
       select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      #status { margin: -1rem 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
+      #status { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
       #status button { width: auto; margin-left: 0.25rem; padding: 0.3rem 0.8rem; font-size: 0.9rem; }
     </style>
   </body>
