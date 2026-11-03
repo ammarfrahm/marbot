@@ -121,6 +121,20 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
     }
 
+    // AbortSignal.timeout is missing on iOS 15, so time out by hand; describeError keys on the name.
+    async function fetchWithTimeout(url: string, ms = 10_000) {
+      const ctl = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, ms);
+      try {
+        return await fetch(url, { signal: ctl.signal });
+      } catch (e) {
+        throw timedOut ? new DOMException('timeout', 'TimeoutError') : e;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
       const [y, m] = ym.split('-').map(Number);
       const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
@@ -130,7 +144,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         try {
           const cached = store.get(key);
           if (cached) return { source, days: JSON.parse(cached) };
-          const res = await fetch(source.url(c, y, m), { signal: AbortSignal.timeout(10_000) });
+          const res = await fetchWithTimeout(source.url(c, y, m));
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const month = source.parse(await res.json());
           store.set(key, JSON.stringify(month));
