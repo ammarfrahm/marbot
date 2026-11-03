@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, toInstant, type DaySchedule } from '../src/lib/schedule';
+import { cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
   date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
@@ -109,5 +109,19 @@ describe('mergeMonths', () => {
   it('handles a single month', () => {
     const m = mergeMonths(['2026-11-03'], '2026-11-03', ['2026-11'], [ok(nov)]);
     expect(m).toMatchObject({ ok: true, partial: false });
+  });
+});
+
+describe('parseCachedMonth', () => {
+  const days = [day('2026-11-03')];
+  it('reads the old plain array', () => {
+    expect(parseCachedMonth(JSON.stringify(days))).toEqual({ fetched: 0, days });
+  });
+  it('reads the { fetched, days } shape', () => {
+    expect(parseCachedMonth(JSON.stringify({ fetched: 5, days }))).toEqual({ fetched: 5, days });
+  });
+  it('rejects anything else', () => {
+    expect(() => parseCachedMonth('{"x":1}')).toThrow();
+    expect(() => parseCachedMonth('not json')).toThrow();
   });
 });

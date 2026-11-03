@@ -80,3 +80,11 @@ export function mergeMonths<T extends { days: DaySchedule[] }>(
     partial: loaded.length < results.length,
   };
 }
+
+/** A cached month: the old shape was a bare array (no fetch time), the new one is `{ fetched, days }`. */
+export function parseCachedMonth(raw: string): { fetched: number; days: DaySchedule[] } {
+  const v = JSON.parse(raw);
+  if (Array.isArray(v)) return { fetched: 0, days: v };
+  if (Array.isArray(v?.days)) return { fetched: Number(v.fetched) || 0, days: v.days };
+  throw new Error('bad cached month');
+}

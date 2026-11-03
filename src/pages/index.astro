@@ -74,7 +74,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
   <script>
     import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
     import {
-      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
+      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
@@ -136,20 +136,35 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       }
     }
 
-    async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
+    const DAY_MS = 86_400_000;
+    const refetching = new Set<string>();
+
+    async function fetchMonth(source: Source, c: City, ym: string, key: string): Promise<DaySchedule[]> {
       const [y, m] = ym.split('-').map(Number);
+      const res = await fetchWithTimeout(source.url(c, y, m));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const month = source.parse(await res.json());
+      store.set(key, JSON.stringify({ fetched: Date.now(), days: month }));
+      return month;
+    }
+
+    // Cache first; a cached month older than a day is refetched quietly and used from the next load on.
+    async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
       const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
       let firstError: unknown;
       for (const source of order) {
         const key = `bedug:${source.id}:${c.id}:${ym}`;
         try {
-          const cached = store.get(key);
-          if (cached) return { source, days: JSON.parse(cached) };
-          const res = await fetchWithTimeout(source.url(c, y, m));
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const month = source.parse(await res.json());
-          store.set(key, JSON.stringify(month));
-          return { source, days: month };
+          const raw = store.get(key);
+          if (raw) {
+            const cached = parseCachedMonth(raw);
+            if (navigator.onLine && Date.now() - cached.fetched > DAY_MS && !refetching.has(key)) {
+              refetching.add(key);
+              fetchMonth(source, c, ym, key).catch(() => {}).finally(() => refetching.delete(key));
+            }
+            return { source, days: cached.days };
+          }
+          return { source, days: await fetchMonth(source, c, ym, key) };
         } catch (e) {
           firstError ??= e;
         }
