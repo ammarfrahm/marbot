@@ -7,7 +7,7 @@ import CityDialog from '../components/CityDialog.astro';
 
 ---
 
-<Base title="Marbot · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
+<Base title="Jadwal Sholat · Marbot" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name" tabindex="-1">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
@@ -259,7 +259,7 @@ import CityDialog from '../components/CityDialog.astro';
         setText('next-name', '…');
         setCountdown('--:--:--');
         setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'Memuat jadwal…');
-        document.title = 'Marbot · Jadwal Sholat';
+        document.title = 'Jadwal Sholat · Marbot';
         return;
       }
       const left = formatCountdown(next.at - now);
