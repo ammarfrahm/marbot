@@ -1,4 +1,4 @@
-import { cityById, nearestCity, titleCase, type City } from './cities';
+import { cityLabel, findCity, nearestCity, titleCase, type City } from './cities';
 
 /** The nearest kab/kota to the device; rejects with a short reason ("Izin lokasi ditolak"). */
 export function locateNearest(): Promise<{ city: City; km: number }> {
@@ -25,14 +25,15 @@ type Options = {
 /** Wires the shared #settings dialog and every [data-open-city] button on the page. */
 export function initCityDialog({ current, pick }: Options) {
   const dialog = document.getElementById('settings') as HTMLDialogElement;
-  const select = document.getElementById('city') as HTMLSelectElement;
+  const input = document.getElementById('city') as HTMLInputElement;
   const hint = document.getElementById('city-hint')!;
   let opener: HTMLElement | null = null;
 
   function open() {
     opener = document.activeElement as HTMLElement | null;
     hint.textContent = '';
-    select.value = current().id;
+    input.value = '';
+    input.placeholder = cityLabel(current());
     dialog.showModal();
   }
   function choose(city: City, note = '') {
@@ -41,7 +42,13 @@ export function initCityDialog({ current, pick }: Options) {
     else dialog.close();
   }
 
-  select.addEventListener('change', () => choose(cityById(select.value)!));
+  // The datalist fills in a full label; a typed name that matches nothing leaves the city as it is.
+  input.addEventListener('change', () => {
+    const city = findCity(input.value);
+    if (city) choose(city);
+    else if (input.value.trim()) hint.textContent = 'Kota tidak ditemukan. Pilih dari daftar.';
+  });
+  input.addEventListener('input', () => (hint.textContent = ''));
   document.getElementById('dlg-locate')!.addEventListener('click', async () => {
     hint.textContent = 'Mencari lokasi…';
     try {

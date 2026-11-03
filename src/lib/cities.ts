@@ -33,3 +33,13 @@ export function nearestCity(lat: number, lon: number): { city: City; km: number 
   }
   return best;
 }
+
+/** Picker label: the province tells "Kab. Bandung" from "Kab. Bandung Barat" at a glance. */
+export const cityLabel = (c: City) => `${titleCase(c.name)}, ${titleCase(c.region)}`;
+
+/** A picker label, or a bare name that is unique ("Kota Bandung"), back to its city. */
+export function findCity(text: string): City | undefined {
+  const t = text.trim().toLowerCase();
+  if (!t) return undefined;
+  return CITIES.find((c) => cityLabel(c).toLowerCase() === t) ?? CITIES.find((c) => titleCase(c.name).toLowerCase() === t);
+}

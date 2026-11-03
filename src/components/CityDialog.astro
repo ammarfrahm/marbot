@@ -1,7 +1,5 @@
 ---
-import { CITIES, titleCase } from '../lib/cities';
-
-const regions = Object.groupBy(CITIES, (c) => c.region);
+import { CITIES, cityLabel } from '../lib/cities';
 ---
 
 <dialog id="settings" aria-labelledby="settings-title">
@@ -9,27 +7,24 @@ const regions = Object.groupBy(CITIES, (c) => c.region);
     <h2 id="settings-title">Ubah kota</h2>
     <label>
       Kota
-      <select id="city">
-        {
-          Object.entries(regions).map(([region, cities]) => (
-            <optgroup label={titleCase(region)}>
-              {cities!.map((c) => <option value={c.id}>{titleCase(c.name)}</option>)}
-            </optgroup>
-          ))
-        }
-      </select>
+      <input id="city" aria-describedby="city-hint" list="city-list" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ketik nama kota" />
+      <datalist id="city-list">
+        {CITIES.map((c) => <option value={cityLabel(c)} />)}
+      </datalist>
     </label>
+    <p id="city-hint" role="status"></p>
     <button type="button" id="dlg-locate">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
       Lokasi saya
     </button>
-    <p id="city-hint" role="status"></p>
     <slot />
     <button type="submit" id="dlg-done">Selesai</button>
   </form>
 </dialog>
 
 <style is:global>
+  #settings input { font: inherit; font-size: var(--fs-md); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 0.65rem 0.75rem; width: 100%; }
+  #settings input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #settings {
     width: min(24rem, calc(100% - 2rem));
     padding: 0;
