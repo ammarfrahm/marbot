@@ -201,6 +201,7 @@ const at = (deg: number, r: number) => {
   #from { margin: 0; color: var(--on-panel-muted); font-size: var(--fs-sm); }
   .hero { padding: 1.5rem 1.25rem 1.25rem; text-align: center; transition: background-color 250ms ease-out; }
   .hero svg { display: block; width: min(100%, 19rem); margin: 0 auto; }
+  @media (min-width: 60rem) { .hero svg { width: min(100%, 26rem); } }
   .face-disc { fill: var(--bg); stroke: var(--line); stroke-width: 1; transition: fill 250ms ease-out; }
   .tick { stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; opacity: 0.55; }
   .tick.major { stroke: var(--ink); stroke-width: 2.5; opacity: 1; }

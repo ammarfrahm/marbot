@@ -195,4 +195,12 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #month-marked :global(li) { padding: 0.4rem 0; }
   #month-marked :global(.what strong) { font-size: var(--fs-md); }
   #this-month { margin-top: 0.75rem; }
+
+  /* Wide screens: the month grid leads and the upcoming days follow it. */
+  @media (min-width: 60rem) {
+    :global(main) { display: flex; flex-direction: column; }
+    .month { order: -1; margin-top: 0; }
+    .upcoming { margin-top: 1.5rem; }
+    #grid :global(td) { height: 4rem; }
+  }
 </style>
