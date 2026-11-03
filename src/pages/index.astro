@@ -88,7 +88,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     // A shared link (?kota=<id>) wins over the stored city, and becomes the stored city.
     const linked = cityById(new URLSearchParams(location.search).get('kota'));
     let city: City = linked ?? cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
-    if (linked) store.set('bedug:city', linked.id);
+    let toSave: string | null = linked?.id ?? null; // a city is stored only once its schedule has loaded
     let chosen = !!store.get('bedug:city') || !!linked; // until then, offer geolocation
     let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
     let preferred: SourceId = store.get('bedug:source') === 'aladhan' ? 'aladhan' : 'myquran';
@@ -186,6 +186,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       if (merged.ok) {
         days = merged.days;
         partial = merged.partial;
+        if (toSave === city.id) store.set('bedug:city', toSave);
+        toSave = null;
         const used = merged.today.source;
         if (used.id === preferred) quietStatus();
         else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
@@ -196,7 +198,13 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       } else {
         days = [];
         loadFailed = true;
-        setStatus(`${label(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
+        const saved = cityById(store.get('bedug:city'));
+        if (!navigator.onLine && saved && saved.id !== city.id) {
+          setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
+            label: `Kembali ke ${titleCase(saved.name)}`,
+            run: () => setCity(saved),
+          });
+        } else setStatus(`${label(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
       }
       tick();
@@ -272,7 +280,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       cityNote = note;
       citySelect.value = c.id;
       $('city-name').textContent = titleCase(c.name);
-      store.set('bedug:city', c.id);
+      toSave = c.id;
       history.replaceState(null, '', `?kota=${c.id}`);
       refresh();
     }
