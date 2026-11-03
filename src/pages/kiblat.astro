@@ -103,9 +103,18 @@ const at = (deg: number, r: number) => {
   let bearing = 0;
   let noCompass = false; // a compass listener is on, but no heading arrived
   let waitTimer: number | undefined;
+  let msg = ''; // a one-off message (searching, an error) that takes the hint's place until the next one
+
+  /** Shows a message in the hint. Once the compass is live the hint no longer speaks, so #announce does: one voice per message. */
+  function say(text: string) {
+    msg = text;
+    setText('hint', text);
+    if (!$('hint').hasAttribute('role')) $('announce').textContent = text;
+  }
 
   function setOrigin(lat: number, lon: number, from: string) {
     bearing = qiblaBearing(lat, lon);
+    msg = '';
     $('qibla').setAttribute('transform', `rotate(${bearing.toFixed(2)} 120 120)`);
     $('from').textContent = from;
     $('fact-bearing').textContent = `${bearing.toFixed(1).replace('.', ',')}° dari utara, ke ${POINTS[Math.round(bearing / 45) % 8]}`;
@@ -116,9 +125,9 @@ const at = (deg: number, r: number) => {
   function showStatic() {
     setText('bearing', `${Math.round(bearing)}°`);
     setText('turn', 'dari utara');
-    setText('hint', noCompass
+    setText('hint', msg || (noCompass
       ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara.`
-      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.');
+      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.'));
   }
 
   // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
@@ -166,7 +175,7 @@ const at = (deg: number, r: number) => {
     hero.dataset.mode = aligned ? 'aligned' : 'live';
     setText('bearing', aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`);
     setText('turn', aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri');
-    setText('hint', aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.');
+    setText('hint', msg || (aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.'));
     $<HTMLButtonElement>('compass').hidden = true;
 
     const spoken = announceTurn(said, turn, aligned, Date.now());
@@ -193,7 +202,7 @@ const at = (deg: number, r: number) => {
     $('compass').addEventListener('click', async () => {
       const answer = await Orientation.requestPermission!().catch(() => 'denied');
       if (answer === 'granted') listen('deviceorientation');
-      else $('hint').textContent = 'Izin kompas ditolak. Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
+      else say('Izin kompas ditolak. Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.');
     });
   } else if (Orientation) {
     listen('deviceorientation');
@@ -213,15 +222,15 @@ const at = (deg: number, r: number) => {
 
   $('locate').addEventListener('click', () => {
     if (undo) return undo.run();
-    if (!('geolocation' in navigator)) return void ($('hint').textContent = 'Browser ini tidak mendukung lokasi.');
-    $('hint').textContent = 'Mencari lokasi…';
+    if (!('geolocation' in navigator)) return say('Browser ini tidak mendukung lokasi.');
+    say('Mencari lokasi…');
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
         setUndo({ label: backTo(city.name), run: useCity });
       },
       (e) => {
-        $('hint').textContent = `${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`;
+        say(`${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`);
       },
       { enableHighAccuracy: true, timeout: 15_000 },
     );
