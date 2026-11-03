@@ -99,6 +99,8 @@ const at = (deg: number, r: number) => {
 
   let city = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
+  let noCompass = false; // a compass listener is on, but no heading arrived
+  let waitTimer: number | undefined;
 
   function setOrigin(lat: number, lon: number, from: string) {
     bearing = qiblaBearing(lat, lon);
@@ -112,7 +114,9 @@ const at = (deg: number, r: number) => {
   function showStatic() {
     $('bearing').textContent = `${Math.round(bearing)}°`;
     $('turn').textContent = 'dari utara';
-    $('hint').textContent = 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
+    $('hint').textContent = noCompass
+      ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara.`
+      : 'Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
   }
 
   // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
@@ -128,6 +132,8 @@ const at = (deg: number, r: number) => {
     if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
     else if (e.absolute && e.alpha !== null) heading = 360 - e.alpha;
     if (heading === null) return;
+    clearTimeout(waitTimer);
+    noCompass = false;
     heading += screen.orientation?.angle ?? 0;
 
     const a = heading * (Math.PI / 180);
@@ -149,20 +155,29 @@ const at = (deg: number, r: number) => {
     $<HTMLButtonElement>('compass').hidden = true;
   }
 
+  // Some desktops expose the event but never fire it with a heading; say so after a few seconds.
+  function listen(type: string) {
+    window.addEventListener(type, onOrientation as EventListener);
+    waitTimer = window.setTimeout(() => {
+      noCompass = true;
+      if (hero.dataset.mode === 'static') showStatic();
+    }, 3000);
+  }
+
   const Orientation = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<PermissionState> } | undefined;
   // Not `in window`: TS's lib always declares it, so `in` would narrow the else branches to never.
   if (window.ondeviceorientationabsolute !== undefined) {
-    window.addEventListener('deviceorientationabsolute', onOrientation as EventListener);
+    listen('deviceorientationabsolute');
   } else if (typeof Orientation?.requestPermission === 'function') {
     // iOS asks for permission, and only from a tap.
     $<HTMLButtonElement>('compass').hidden = false;
     $('compass').addEventListener('click', async () => {
       const answer = await Orientation.requestPermission!().catch(() => 'denied');
-      if (answer === 'granted') window.addEventListener('deviceorientation', onOrientation as EventListener);
+      if (answer === 'granted') listen('deviceorientation');
       else $('hint').textContent = 'Izin kompas ditolak. Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.';
     });
   } else if (Orientation) {
-    window.addEventListener('deviceorientation', onOrientation as EventListener);
+    listen('deviceorientation');
   }
 
   $('locate').addEventListener('click', () => {
