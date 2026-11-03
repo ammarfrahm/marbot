@@ -23,6 +23,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       <div>
         <h2 id="month-title" tabindex="-1">&nbsp;</h2>
         <p id="month-span">&nbsp;</p>
+        <button type="button" id="this-month" hidden>Kembali ke bulan ini</button>
       </div>
       <button type="button" id="next" aria-label="Bulan berikutnya">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
@@ -35,7 +36,6 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       <tbody></tbody>
     </table>
     <ul id="month-marked"></ul>
-    <button type="button" id="this-month" hidden>Kembali ke bulan ini</button>
   </section>
 
   <p class="note">
@@ -194,7 +194,9 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #month-marked { margin: 0.75rem 0.25rem 0; }
   #month-marked :global(li) { padding: 0.4rem 0; }
   #month-marked :global(.what strong) { font-size: var(--fs-md); }
-  #this-month { margin-top: 0.75rem; }
+  /* Hidden, it still holds its height so the card does not jump between months. */
+  #this-month { display: block; width: auto; margin: 0.35rem auto 0; padding: 0.3rem 0.85rem; border: 0; border-radius: var(--r-pill); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-sm); }
+  #this-month[hidden] { visibility: hidden; }
 
   /* Wide screens: the month grid leads and the upcoming days follow it. */
   @media (min-width: 60rem) {
