@@ -21,7 +21,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
       <div>
-        <h2 id="month-title">&nbsp;</h2>
+        <h2 id="month-title" tabindex="-1">&nbsp;</h2>
         <p id="month-span">&nbsp;</p>
       </div>
       <button type="button" id="next" aria-label="Bulan berikutnya">
@@ -83,6 +83,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
 
   function renderMonth(m: HijriMonth) {
     shown = m;
+    const focused = document.activeElement as HTMLButtonElement | null;
     const last = addDays(m.start, m.length - 1);
     $('month-title').textContent = `${HIJRI_MONTHS[m.month - 1]} ${m.year} H`;
     $('month-span').textContent =
@@ -90,6 +91,8 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     $<HTMLButtonElement>('prev').disabled = !shiftMonth(m, -1);
     $<HTMLButtonElement>('next').disabled = !shiftMonth(m, 1);
     $('this-month').hidden = today >= m.start && today <= last;
+    // A focused button that disables or hides itself would drop focus to the page.
+    if (focused && (focused.disabled || focused.hidden)) $('month-title').focus();
 
     const marked = new Map(markedDays(m).map((d) => [d.date, d]));
     const body = $('grid').querySelector('tbody')!;

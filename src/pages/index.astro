@@ -11,7 +11,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 <Base title="Marbot · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
     <Fragment slot="header">
       <div class="place">
-        <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
+        <h1 id="city-name" tabindex="-1">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
         <button type="button" id="change-city" class="pill" aria-label="Ubah kota">Ubah</button>
       </div>
       <p id="today">&nbsp;</p>
@@ -23,7 +23,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       </section>
     </Fragment>
 
-    <p id="status" role="status"><span id="status-line" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></span></p>
+    <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
 
     <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
     <ol id="times" class="card" aria-labelledby="list-title">
@@ -115,12 +115,15 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
     let statusAction: (() => void) | null = null;
     function setStatus(text: string, action?: { label: string; run: () => void }) {
+      const button = $<HTMLButtonElement>('status-action');
+      const hadFocus = document.activeElement === button;
       setText('status-text', text);
       $('status-line').hidden = !text;
-      const button = $<HTMLButtonElement>('status-action');
       button.hidden = !action;
       button.textContent = action?.label ?? '';
       statusAction = action?.run ?? null;
+      // A focused button that disappears would drop focus to the page; keep it nearby.
+      if (hadFocus && !action) $(text ? 'status-text' : 'city-name').focus();
     }
 
     /** Why a source failed, in words a reader can act on. */
