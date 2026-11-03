@@ -187,9 +187,12 @@ import PanelBoot from '../components/PanelBoot.astro';
         toSave = null;
         const used = merged.today.source;
         setText('source-note', `Sumber: ${used.credit}`);
+        const noTomorrow = !days.some((d) => d.date === wanted[2]);
         if (used.id !== preferred) setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
-        else if (!days.some((d) => d.date === wanted[2])) setStatus('Jadwal besok belum tersimpan. Sambungkan internet sebentar.');
+        else if (noTomorrow && !cityNote) setStatus(navigator.onLine ? 'Jadwal besok belum bisa dimuat. Dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan. Sambungkan internet sebentar.');
         else quietStatus();
+        // Offline waits for the online event; online retries like a failed load.
+        if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
         // Online now: save next month too, so the last day of a month still works offline.
         const [y, m] = wanted[1].split('-').map(Number);
         const nextMonth = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
