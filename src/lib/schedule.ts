@@ -51,9 +51,9 @@ export function lastPrayer(days: DaySchedule[], now: number, offset: UtcOffset):
   return prayerTimes(days, offset).findLast((p) => p.at <= now) ?? null;
 }
 
-/** Time left until the target: "HH:MM:SS", or "MM:SS" under an hour; partial seconds round up, clamped at zero. */
+/** Time left until the target: "HH:MM:SS"; partial seconds round up, clamped at zero. */
 export function formatCountdown(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   const parts = [s / 3600, (s % 3600) / 60, s % 60].map((n) => String(Math.floor(n)).padStart(2, '0'));
-  return (s < 3600 ? parts.slice(1) : parts).join(':');
+  return parts.join(':');
 }
