@@ -6,6 +6,8 @@ export type Source = {
   id: SourceId;
   /** Short name for status messages. */
   name: string;
+  /** The credit line under the times. */
+  credit: string;
   label: string;
   url(city: City, year: number, month: number): string;
   parse(json: unknown): DaySchedule[];
@@ -31,6 +33,7 @@ const pick = (raw: Record<string, unknown>, keys: Record<TimeName, string>) =>
 export const myquran: Source = {
   id: 'myquran',
   name: 'myQuran',
+  credit: 'myQuran (Kemenag)',
   label: 'myQuran · jadwal resmi Kemenag',
   url: (city, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${city.id}/${year}/${pad(month)}`,
   parse(json) {
@@ -45,6 +48,7 @@ export const myquran: Source = {
 export const aladhan: Source = {
   id: 'aladhan',
   name: 'Aladhan',
+  credit: 'Aladhan',
   label: 'Aladhan · hitungan, bisa 2–4 menit lebih awal',
   url: (city, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${city.lat}&longitude=${city.lon}` +

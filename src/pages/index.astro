@@ -18,7 +18,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
-        <p id="countdown" role="timer" aria-live="off">--:--:--</p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">--:--:--</span><span id="cd-lagi" hidden> lagi</span></p>
         <p id="next-at">Memuat jadwal…</p>
       </section>
     </Fragment>
@@ -34,6 +34,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         ))
       }
     </ol>
+
+    <p id="source-note">&nbsp;</p>
 
     <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
 
@@ -88,6 +90,12 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     const setText = (id: string, text: string) => {
       const el = $(id);
       if (el.textContent !== text) el.textContent = text;
+    };
+
+    /** The digits, plus the word that makes them "left" rather than a clock time. */
+    const setCountdown = (text: string, remaining = false) => {
+      setText('cd-left', text);
+      $('cd-lagi').hidden = !remaining;
     };
 
     let statusAction: (() => void) | null = null;
@@ -178,6 +186,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         if (toSave === city.id) store.set('bedug:city', toSave);
         toSave = null;
         const used = merged.today.source;
+        setText('source-note', `Sumber: ${used.credit}`);
         if (used.id === preferred) quietStatus();
         else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
         // Online now: save next month too, so the last day of a month still works offline.
@@ -186,6 +195,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         if (navigator.onLine && !months.includes(nextMonth)) loadMonth(city, nextMonth).catch(() => {});
       } else {
         days = [];
+        setText('source-note', '\u00a0');
         loadFailed = true;
         const saved = cityById(store.get('bedug:city'));
         if (!navigator.onLine && saved && saved.id !== city.id) {
@@ -246,21 +256,21 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
       if (arrived) {
         setText('next-name', label(arrived.name));
-        setText('countdown', 'Sudah masuk');
+        setCountdown('Sudah masuk');
         setText('next-at', `sejak ${arrived.time} ${zone}`);
         document.title = `${label(arrived.name)} sudah masuk · Marbot`;
         return;
       }
       if (!next) {
         setText('next-name', '…');
-        setText('countdown', '--:--:--');
+        setCountdown('--:--:--');
         setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : partial ? 'Jadwal bulan depan belum tersimpan.' : 'Memuat jadwal…');
         document.title = 'Marbot · Jadwal Sholat';
         return;
       }
       const left = formatCountdown(next.at - now);
       setText('next-name', label(next.name));
-      setText('countdown', left);
+      setCountdown(left, true);
       setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
       document.title = `${left} · ${label(next.name)} · Marbot`;
     }
@@ -318,6 +328,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       letter-spacing: -0.02em;
       font-variant-numeric: tabular-nums;
     }
+    #cd-lagi { font-size: var(--fs-md); font-weight: 400; letter-spacing: 0; color: var(--on-panel-muted); }
     #next-at { color: var(--on-panel-muted); font-variant-numeric: tabular-nums; }
     [data-state='soon'] #countdown { font-weight: 600; }
     [data-state='soon'] #next-at { color: var(--on-panel); }
@@ -333,7 +344,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
     }
     #times li + li { box-shadow: 0 -1px 0 var(--line); }
     #times li.minor { font-size: var(--fs-md); color: var(--muted); }
-    #times li.past { color: var(--muted); }
+    #times li.past { color: var(--faint); }
     #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-radius: var(--r-sm); box-shadow: none; }
     #times li.next + li { box-shadow: none; }
     #times li.next::before {
@@ -348,8 +359,9 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       background: var(--gold);
     }
     #list-title { margin-top: 0; }
+    #source-note { margin: 0.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
     #status:has(> [hidden]) { margin: 0; }
     #status { margin: 0.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
-    #status button { width: auto; margin-left: 0.25rem; padding: 0; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
+    #status button { width: auto; margin: -0.75rem 0 -0.75rem 0.25rem; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
   </style>
 </Base>
