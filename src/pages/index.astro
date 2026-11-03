@@ -21,6 +21,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
         <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
       </div>
       <p id="today">&nbsp;</p>
+  <p id="hijri"></p>
     </Fragment>
 
     <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
@@ -92,6 +93,7 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
     import {
       cityClock, cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
     } from '../lib/schedule';
+    import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
     import { store } from '../lib/store';
 
@@ -203,6 +205,8 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
       $('today').textContent =
         `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
         ` · ${cityClock(now, city.utcOffset)} ${zone}`;
+    const hijri = toHijri(today);
+    setText('hijri', hijri ? formatHijri(hijri) : '');
 
       const next = nextPrayer(days, now, city.utcOffset);
       const last = lastPrayer(days, now, city.utcOffset);
@@ -308,7 +312,8 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
     .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
     h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
     #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
-    #today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    #today, #hijri { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    #hijri { margin: 0; }
     .hero { margin: 2rem 0 1.5rem; }
     .hero p { margin: 0; }
     .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
