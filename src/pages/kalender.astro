@@ -1,6 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 
+// Six empty rows hold the grid's height until the script fills it, so nothing below jumps.
+const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
 const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 ---
 
@@ -35,7 +37,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
       <thead>
         <tr>{WEEKDAYS.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
       </thead>
-      <tbody></tbody>
+      <tbody>{ROWS.map((row) => <tr>{row.map(() => <td />)}</tr>)}</tbody>
     </table>
     <ul id="month-marked"></ul>
   </section>
@@ -163,7 +165,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   .month-head h2 { margin: 0; font-size: var(--fs-md); }
   .upcoming .section-title { margin-top: 0; }
   ol, ul { list-style: none; margin: 0; padding: 0; }
-  #upcoming { padding: 0.35rem; }
+  #upcoming { padding: 0.35rem; min-height: 25rem; } /* four rows, one with a note: the script fills it after load */
   #upcoming :global(li) {
     display: flex;
     justify-content: space-between;
@@ -200,7 +202,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #grid :global(td[aria-current='date']) { background: var(--accent); color: var(--card); font-weight: 600; }
   #grid :global(td[aria-current='date'] .g) { color: inherit; font-weight: 400; }
 
-  #month-marked { margin: 0.75rem 0.25rem 0; }
+  #month-marked { margin: 0.75rem 0.25rem 0; min-height: 11.25rem; } /* two marked days, one with a note */
   #month-marked :global(li) { padding: 0.4rem 0; }
   #month-marked :global(.what strong) { font-size: var(--fs-md); }
   /* Hidden, it still holds its height so the card does not jump between months. */

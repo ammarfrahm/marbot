@@ -15,15 +15,13 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
       </div>
       <p id="today">&nbsp;</p>
-      <p id="hijri"></p>
+      <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
         <p id="countdown" role="timer" aria-live="off">--:--:--</p>
         <p id="next-at">Memuat jadwal…</p>
       </section>
     </Fragment>
-
-    <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
 
     <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
     <ol id="times" class="card" aria-labelledby="list-title">
@@ -36,6 +34,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         ))
       }
     </ol>
+
+    <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
 
     <CityDialog>
       <label>
@@ -213,7 +213,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
       setText('today', `${dateFormat(city.utcOffset).format(now)} · ${cityClock(now, city.utcOffset)} ${zone}`);
       const hijri = toHijri(today);
-      setText('hijri', hijri ? formatHijri(hijri) : '');
+      setText('hijri', hijri ? formatHijri(hijri) : '\u00a0');
 
       const next = nextPrayer(days, now, city.utcOffset);
       const last = lastPrayer(days, now, city.utcOffset);
@@ -347,8 +347,9 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
       border-radius: 50%;
       background: var(--gold);
     }
+    #list-title { margin-top: 0; }
     #status:has(> [hidden]) { margin: 0; }
-    #status { margin: 0 0.25rem 0.5rem; color: var(--muted); font-size: var(--fs-sm); }
+    #status { margin: 0.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); }
     #status button { width: auto; margin-left: 0.25rem; padding: 0; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
   </style>
 </Base>
