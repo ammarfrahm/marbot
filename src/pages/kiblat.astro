@@ -128,7 +128,7 @@ const at = (deg: number, r: number) => {
     setText('bearing', `${Math.round(bearing)}°`);
     setText('turn', 'dari utara');
     setText('hint', msg || (noCompass
-      ? `Perangkat ini tidak punya kompas; pakai arah ${Math.round(bearing)}° dari utara. ${NORTH_TIP}`
+      ? `Tanpa kompas: pakai arah ${Math.round(bearing)}° dari utara. ${NORTH_TIP}`
       : `Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah. ${NORTH_TIP}`));
   }
 
