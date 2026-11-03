@@ -1,4 +1,4 @@
-import { cityLabel, findCity, nearestCity, titleCase, type City } from './cities';
+import { cityLabel, matchCities, matchHint, nearestCity, titleCase, type City } from './cities';
 
 /** The nearest kab/kota to the device; rejects with a short reason ("Izin lokasi ditolak"). */
 export function locateNearest(): Promise<{ city: City; km: number }> {
@@ -26,6 +26,7 @@ type Options = {
 export function initCityDialog({ current, pick }: Options) {
   const dialog = document.getElementById('settings') as HTMLDialogElement;
   const input = document.getElementById('city') as HTMLInputElement;
+  const form = dialog.querySelector('form')!;
   const hint = document.getElementById('city-hint')!;
   let opener: HTMLElement | null = null;
 
@@ -42,11 +43,19 @@ export function initCityDialog({ current, pick }: Options) {
     else dialog.close();
   }
 
-  // The datalist fills in a full label; a typed name that matches nothing leaves the city as it is.
-  input.addEventListener('change', () => {
-    const city = findCity(input.value);
-    if (city) choose(city);
-    else if (input.value.trim()) hint.textContent = 'Kota tidak ditemukan. Pilih dari daftar.';
+  /** Picks what is typed if it is one city; otherwise says why not and keeps the dialog open. */
+  function pickTyped() {
+    const hits = matchCities(input.value);
+    if (hits.length === 1) return choose(hits[0]);
+    hint.textContent = matchHint(hits);
+    input.focus();
+  }
+  // The datalist fills in a full label and fires change; Enter and Selesai submit the form.
+  input.addEventListener('change', () => input.value.trim() && pickTyped());
+  form.addEventListener('submit', (e) => {
+    if (!dialog.open || !input.value.trim()) return; // nothing typed: Selesai just closes
+    e.preventDefault(); // a typed name must resolve before the dialog closes
+    pickTyped();
   });
   input.addEventListener('input', () => (hint.textContent = ''));
   document.getElementById('dlg-locate')!.addEventListener('click', async () => {
