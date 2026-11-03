@@ -29,5 +29,7 @@ const precache = {
 
 export default defineConfig({
   site: 'https://marbot.ammar.id',
+  // Inline CSS so nothing blocks the PanelBoot script: a slow CPU otherwise paints the placeholder city first.
+  build: { inlineStylesheets: 'always' },
   integrations: [precache],
 });
