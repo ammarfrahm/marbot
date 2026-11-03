@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
   const navigate = request.mode === 'navigate';
   event.respondWith(
     caches
-      .match(request, { ignoreSearch: navigate }) // ?kota= links open the cached page
+      .match(request, { ignoreSearch: navigate, ignoreVary: true }) // ?kota= links open the cached page; module requests send Origin, which precached ones lacked
       .then((hit) => hit ?? fetch(request))
       .catch(() =>
         navigate
