@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CITIES, cityLabel, findCity, matchCities, matchHint, titleCase } from '../src/lib/cities';
+import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, titleCase } from '../src/lib/cities';
 
 describe('titleCase', () => {
   it('capitalises each word', () => expect(titleCase('KAB. BANDUNG BARAT')).toBe('Kab. Bandung Barat'));
@@ -42,4 +42,12 @@ describe('matchHint', () => {
 
 describe('cityLabel', () => {
   it('labels every city uniquely', () => expect(new Set(CITIES.map(cityLabel)).size).toBe(CITIES.length));
+});
+
+describe('offerLinked', () => {
+  const [a, b] = CITIES;
+  it('offers a linked city when nothing is saved', () => expect(offerLinked(a, undefined)).toBe(true));
+  it('offers a linked city that differs from the saved one', () => expect(offerLinked(a, b)).toBe(true));
+  it('stays quiet when the link is the saved city', () => expect(offerLinked(a, a)).toBe(false));
+  it('stays quiet without a link', () => expect(offerLinked(undefined, a)).toBe(false));
 });

@@ -73,3 +73,6 @@ export function matchHint(hits: City[]): string {
   const shown = hits.slice(0, 3).map((c) => titleCase(c.name)).join(', ');
   return `${hits.length} kota cocok: ${shown}${hits.length > 3 ? ', dll.' : ''} — pilih dari daftar.`;
 }
+
+/** A city from a shared link is offered for saving, unless it is already the saved one. */
+export const offerLinked = (linked: City | undefined, stored: City | undefined) => !!linked && linked.id !== stored?.id;
