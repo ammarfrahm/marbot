@@ -1,0 +1,89 @@
+---
+import '@fontsource-variable/familjen-grotesk/wght.css';
+
+type Props = { title: string; description: string };
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16110c" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="brand"><img src="/favicon.svg" alt="" width="20" height="20" />Bedug</p>
+        <slot name="header" />
+      </header>
+      <slot />
+    </main>
+
+    <style is:global>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5efe4;
+        --ink: #2b2118;
+        --muted: #6b5e50;
+        --line: #e2d7c5;
+        --accent: #8f3f12;
+        --accent-soft: #ead6c2;
+        --skin: #efe2c8;
+        --rim: #6f2e17;
+        --peg: #9a5a37;
+        --peg-on: #f2c46b;
+        --skin-now: #f3d79a;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16110c;
+          --ink: #f0e7d9;
+          --muted: #a2927f;
+          --line: #33291f;
+          --accent: #e8955b;
+          --accent-soft: #3a2616;
+          --skin: #2a1f15;
+          --rim: #5a2a16;
+          --peg: #7a4a2c;
+          --peg-on: #f0b660;
+          --skin-now: #4a3216;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scrollbar-color: var(--line) var(--bg); caret-color: var(--accent); accent-color: var(--accent); }
+      ::selection { background: var(--accent-soft); color: var(--ink); }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 'Familjen Grotesk Variable', system-ui, sans-serif;
+      }
+      main {
+        max-width: 28rem;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+      }
+      select, button {
+        font: inherit;
+        font-size: 1rem;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 0.55rem 0.6rem;
+        width: 100%;
+      }
+      button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
+      @media (hover: hover) { button:hover { background: var(--accent-soft); } }
+      select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .brand { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
+      header { text-align: center; }
+    </style>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
 import { PRAYERS, TIMES } from '../lib/schedule';
 import { SOURCES } from '../lib/sources';
-import '@fontsource-variable/familjen-grotesk/wght.css';
+import Base from '../layouts/Base.astro';
 
 const regions = Object.groupBy(CITIES, (c) => c.region);
 const label = (t: string) => t[0].toUpperCase() + t.slice(1);
@@ -14,433 +14,355 @@ const PEGS = Array.from({ length: 36 }, (_, i) => {
 });
 ---
 
-<!doctype html>
-<html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bedug · Jadwal Sholat</title>
-    <meta name="description" content="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." />
-    <meta name="theme-color" content="#f5efe4" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#16110c" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  </head>
-  <body>
-    <main>
-      <header>
-        <p class="brand"><img src="/favicon.svg" alt="" width="20" height="20" />Bedug</p>
-        <div class="place">
-          <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
-          <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
+<Base title="Bedug · Jadwal Sholat" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya.">
+    <Fragment slot="header">
+      <div class="place">
+        <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
+        <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
+      </div>
+      <p id="today">&nbsp;</p>
+    </Fragment>
+
+    <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
+      <div class="drum">
+        <svg viewBox="0 0 240 240" aria-hidden="true">
+          <circle class="rim" cx="120" cy="120" r="119" />
+          <circle class="skin" cx="120" cy="120" r="97" />
+          <circle class="skin-ring" cx="120" cy="120" r="89" />
+          <g id="pegs">{PEGS.map((p) => <circle cx={p.x} cy={p.y} r="3.2" />)}</g>
+        </svg>
+        <div class="face">
+          <p id="next-name">…</p>
+          <p id="countdown" role="timer" aria-live="off">--:--:--</p>
+          <p id="next-at">Memuat jadwal…</p>
         </div>
-        <p id="today">&nbsp;</p>
-      </header>
+      </div>
+    </section>
 
-      <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
-        <div class="drum">
-          <svg viewBox="0 0 240 240" aria-hidden="true">
-            <circle class="rim" cx="120" cy="120" r="119" />
-            <circle class="skin" cx="120" cy="120" r="97" />
-            <circle class="skin-ring" cx="120" cy="120" r="89" />
-            <g id="pegs">{PEGS.map((p) => <circle cx={p.x} cy={p.y} r="3.2" />)}</g>
-          </svg>
-          <div class="face">
-            <p id="next-name">…</p>
-            <p id="countdown" role="timer" aria-live="off">--:--:--</p>
-            <p id="next-at">Memuat jadwal…</p>
-          </div>
-        </div>
-      </section>
+    <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
 
-      <p id="status" role="status" hidden><span id="status-text"></span> <button type="button" id="status-action" hidden></button></p>
-
-      <h2 id="list-title">Jadwal hari ini</h2>
-      <ol id="times" aria-labelledby="list-title">
-        {
-          TIMES.map((t) => (
-            <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
-              <span>{label(t)}</span>
-              <time>--:--</time>
-            </li>
-          ))
-        }
-      </ol>
-
-      <details id="settings">
-        <summary>Ubah kota atau sumber jadwal</summary>
-        <form onsubmit="return false">
-          <label>
-            Kota
-            <select id="city">
-              {
-                Object.entries(regions).map(([region, cities]) => (
-                  <optgroup label={titleCase(region)}>
-                    {cities!.map((c) => (
-                      <option value={c.id} selected={c.id === DEFAULT_CITY_ID}>
-                        {titleCase(c.name)}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))
-              }
-            </select>
-          </label>
-          <button type="button" id="locate">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
-            Lokasi saya
-          </button>
-          <label>
-            Sumber
-            <select id="source">
-              {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
-            </select>
-          </label>
-        </form>
-      </details>
-
-      <noscript><p>Bedug butuh JavaScript untuk menampilkan jadwal.</p></noscript>
-    </main>
-
-    <script>
-      import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
-      import {
-        cityClock, cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
-      } from '../lib/schedule';
-      import { SOURCES, type Source, type SourceId } from '../lib/sources';
-
-      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-      const citySelect = $<HTMLSelectElement>('city');
-      const sourceSelect = $<HTMLSelectElement>('source');
-      const label = (t: string) => t[0].toUpperCase() + t.slice(1);
-
-      // Storage can be unavailable (private mode, blocked site data); the page must still work.
-      const store = {
-        get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
-        set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* not persisted */ } },
-      };
-
-      // A shared link (?kota=<id>) wins over the stored city, and becomes the stored city.
-      const linked = cityById(new URLSearchParams(location.search).get('kota'));
-      let city: City = linked ?? cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
-      if (linked) store.set('bedug:city', linked.id);
-      let chosen = !!store.get('bedug:city') || !!linked; // until then, offer geolocation
-      let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
-      let preferred: SourceId = store.get('bedug:source') === 'aladhan' ? 'aladhan' : 'myquran';
-      let days: DaySchedule[] = [];
-      let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
-      let loadToken = 0;
-      let loadFailed = false;
-
-      // Write only real changes: the hero is a live region and the page ticks every second.
-      const setText = (id: string, text: string) => {
-        const el = $(id);
-        if (el.textContent !== text) el.textContent = text;
-      };
-
-      let statusAction: (() => void) | null = null;
-      function setStatus(text: string, action?: { label: string; run: () => void }) {
-        $('status').hidden = !text;
-        setText('status-text', text);
-        const button = $<HTMLButtonElement>('status-action');
-        button.hidden = !action;
-        button.textContent = action?.label ?? '';
-        statusAction = action?.run ?? null;
+    <h2 id="list-title">Jadwal hari ini</h2>
+    <ol id="times" aria-labelledby="list-title">
+      {
+        TIMES.map((t) => (
+          <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
+            <span>{label(t)}</span>
+            <time>--:--</time>
+          </li>
+        ))
       }
+    </ol>
 
-      /** Why a source failed, in words a reader can act on. */
-      function describeError(e: unknown): string {
-        if (e instanceof DOMException && e.name === 'TimeoutError') return 'server tidak menjawab';
-        if (e instanceof TypeError) return navigator.onLine ? 'server tidak bisa dihubungi' : 'tidak ada koneksi internet';
-        const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
-        return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
-      }
+    <details id="settings">
+      <summary>Ubah kota atau sumber jadwal</summary>
+      <form onsubmit="return false">
+        <label>
+          Kota
+          <select id="city">
+            {
+              Object.entries(regions).map(([region, cities]) => (
+                <optgroup label={titleCase(region)}>
+                  {cities!.map((c) => (
+                    <option value={c.id} selected={c.id === DEFAULT_CITY_ID}>
+                      {titleCase(c.name)}
+                    </option>
+                  ))}
+                </optgroup>
+              ))
+            }
+          </select>
+        </label>
+        <button type="button" id="locate">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" class="dot" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+          Lokasi saya
+        </button>
+        <label>
+          Sumber
+          <select id="source">
+            {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+      </form>
+    </details>
 
-      async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
-        const [y, m] = ym.split('-').map(Number);
-        const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
-        let firstError: unknown;
-        for (const source of order) {
-          const key = `bedug:${source.id}:${c.id}:${ym}`;
-          try {
-            const cached = store.get(key);
-            if (cached) return { source, days: JSON.parse(cached) };
-            const res = await fetch(source.url(c, y, m), { signal: AbortSignal.timeout(10_000) });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const month = source.parse(await res.json());
-            store.set(key, JSON.stringify(month));
-            return { source, days: month };
-          } catch (e) {
-            firstError ??= e;
-          }
-        }
-        throw firstError;
-      }
+    <noscript><p>Bedug butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
-      async function refresh() {
-        const token = ++loadToken;
-        const now = Date.now();
-        // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
-        const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
-        loadedFor = `${city.id}:${wanted[1]}`;
-        loadFailed = false;
+  <script>
+    import { cityById, DEFAULT_CITY_ID, nearestCity, titleCase, type City } from '../lib/cities';
+    import {
+      cityClock, cityDate, formatCountdown, lastPrayer, nextPrayer, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName,
+    } from '../lib/schedule';
+    import { SOURCES, type Source, type SourceId } from '../lib/sources';
+    import { store } from '../lib/store';
+
+    const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+    const citySelect = $<HTMLSelectElement>('city');
+    const sourceSelect = $<HTMLSelectElement>('source');
+    const label = (t: string) => t[0].toUpperCase() + t.slice(1);
+
+    // A shared link (?kota=<id>) wins over the stored city, and becomes the stored city.
+    const linked = cityById(new URLSearchParams(location.search).get('kota'));
+    let city: City = linked ?? cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+    if (linked) store.set('bedug:city', linked.id);
+    let chosen = !!store.get('bedug:city') || !!linked; // until then, offer geolocation
+    let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
+    let preferred: SourceId = store.get('bedug:source') === 'aladhan' ? 'aladhan' : 'myquran';
+    let days: DaySchedule[] = [];
+    let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
+    let loadToken = 0;
+    let loadFailed = false;
+
+    // Write only real changes: the hero is a live region and the page ticks every second.
+    const setText = (id: string, text: string) => {
+      const el = $(id);
+      if (el.textContent !== text) el.textContent = text;
+    };
+
+    let statusAction: (() => void) | null = null;
+    function setStatus(text: string, action?: { label: string; run: () => void }) {
+      $('status').hidden = !text;
+      setText('status-text', text);
+      const button = $<HTMLButtonElement>('status-action');
+      button.hidden = !action;
+      button.textContent = action?.label ?? '';
+      statusAction = action?.run ?? null;
+    }
+
+    /** Why a source failed, in words a reader can act on. */
+    function describeError(e: unknown): string {
+      if (e instanceof DOMException && e.name === 'TimeoutError') return 'server tidak menjawab';
+      if (e instanceof TypeError) return navigator.onLine ? 'server tidak bisa dihubungi' : 'tidak ada koneksi internet';
+      const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
+      return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
+    }
+
+    async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
+      const [y, m] = ym.split('-').map(Number);
+      const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
+      let firstError: unknown;
+      for (const source of order) {
+        const key = `bedug:${source.id}:${c.id}:${ym}`;
         try {
-          const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
-          const results = await Promise.all(months.map((ym) => loadMonth(city, ym)));
-          if (token !== loadToken) return; // a newer city/source choice won
-          days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
-          const used = results[0].source;
-          if (used.id === preferred) quietStatus();
-          else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
+          const cached = store.get(key);
+          if (cached) return { source, days: JSON.parse(cached) };
+          const res = await fetch(source.url(c, y, m), { signal: AbortSignal.timeout(10_000) });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const month = source.parse(await res.json());
+          store.set(key, JSON.stringify(month));
+          return { source, days: month };
         } catch (e) {
-          if (token !== loadToken) return;
-          days = [];
-          loadFailed = true;
-          setStatus(`${label(describeError(e))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
-          setTimeout(() => token === loadToken && refresh(), 60_000);
+          firstError ??= e;
         }
-        tick();
+      }
+      throw firstError;
+    }
+
+    async function refresh() {
+      const token = ++loadToken;
+      const now = Date.now();
+      // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
+      const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
+      loadedFor = `${city.id}:${wanted[1]}`;
+      loadFailed = false;
+      try {
+        const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
+        const results = await Promise.all(months.map((ym) => loadMonth(city, ym)));
+        if (token !== loadToken) return; // a newer city/source choice won
+        days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
+        const used = results[0].source;
+        if (used.id === preferred) quietStatus();
+        else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
+      } catch (e) {
+        if (token !== loadToken) return;
+        days = [];
+        loadFailed = true;
+        setStatus(`${label(describeError(e))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
+        setTimeout(() => token === loadToken && refresh(), 60_000);
+      }
+      tick();
+    }
+
+    const SOON_MS = 10 * 60_000;
+    const ARRIVED_MS = 10 * 60_000;
+    const pegs = [...document.querySelectorAll<SVGCircleElement>('#pegs circle')];
+    let litPegs = -1;
+    /** Light the share of pegs that matches the time already passed since the last prayer. */
+    function lightPegs(fraction: number) {
+      const lit = Math.floor(Math.min(1, Math.max(0, fraction)) * pegs.length);
+      if (lit === litPegs) return;
+      litPegs = lit;
+      pegs.forEach((peg, i) => peg.classList.toggle('lit', i < lit));
+    }
+
+    function tick() {
+      const now = Date.now();
+      const zone = ZONE_LABEL[city.utcOffset];
+      const today = cityDate(now, city.utcOffset);
+      if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
+
+      $('today').textContent =
+        `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
+        ` · ${cityClock(now, city.utcOffset)} ${zone}`;
+
+      const next = nextPrayer(days, now, city.utcOffset);
+      const last = lastPrayer(days, now, city.utcOffset);
+      // A prayer stays "arrived" for a while; before that, the last minutes count down in accent.
+      const arrived = last && now - last.at < ARRIVED_MS ? last : null;
+      const shown = arrived ?? next;
+      $('hero').dataset.state =
+        !next ? (loadFailed ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
+
+      // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
+      const listDate = shown?.date ?? today;
+      const listed = days.find((d) => d.date === listDate);
+      setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
+      for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
+        const t = li.dataset.time as TimeName;
+        li.querySelector('time')!.textContent = listed?.[t] ?? '--:--';
+        const current = shown?.name === t;
+        li.classList.toggle('next', current);
+        if (current) li.setAttribute('aria-current', 'time');
+        else li.removeAttribute('aria-current');
+        li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
       }
 
-      const SOON_MS = 10 * 60_000;
-      const ARRIVED_MS = 10 * 60_000;
-      const pegs = [...document.querySelectorAll<SVGCircleElement>('#pegs circle')];
-      let litPegs = -1;
-      /** Light the share of pegs that matches the time already passed since the last prayer. */
-      function lightPegs(fraction: number) {
-        const lit = Math.floor(Math.min(1, Math.max(0, fraction)) * pegs.length);
-        if (lit === litPegs) return;
-        litPegs = lit;
-        pegs.forEach((peg, i) => peg.classList.toggle('lit', i < lit));
+      lightPegs(arrived ? 1 : last && next ? (now - last.at) / (next.at - last.at) : 0);
+      if (arrived) {
+        setText('next-name', label(arrived.name));
+        setText('countdown', 'Sudah masuk');
+        setText('next-at', `sejak ${arrived.time} ${zone}`);
+        document.title = `${label(arrived.name)} sudah masuk · Bedug`;
+        return;
       }
-
-      function tick() {
-        const now = Date.now();
-        const zone = ZONE_LABEL[city.utcOffset];
-        const today = cityDate(now, city.utcOffset);
-        if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
-
-        $('today').textContent =
-          `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
-          ` · ${cityClock(now, city.utcOffset)} ${zone}`;
-
-        const next = nextPrayer(days, now, city.utcOffset);
-        const last = lastPrayer(days, now, city.utcOffset);
-        // A prayer stays "arrived" for a while; before that, the last minutes count down in accent.
-        const arrived = last && now - last.at < ARRIVED_MS ? last : null;
-        const shown = arrived ?? next;
-        $('hero').dataset.state =
-          !next ? (loadFailed ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
-
-        // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
-        const listDate = shown?.date ?? today;
-        const listed = days.find((d) => d.date === listDate);
-        setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
-        for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
-          const t = li.dataset.time as TimeName;
-          li.querySelector('time')!.textContent = listed?.[t] ?? '--:--';
-          const current = shown?.name === t;
-          li.classList.toggle('next', current);
-          if (current) li.setAttribute('aria-current', 'time');
-          else li.removeAttribute('aria-current');
-          li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
-        }
-
-        lightPegs(arrived ? 1 : last && next ? (now - last.at) / (next.at - last.at) : 0);
-        if (arrived) {
-          setText('next-name', label(arrived.name));
-          setText('countdown', 'Sudah masuk');
-          setText('next-at', `sejak ${arrived.time} ${zone}`);
-          document.title = `${label(arrived.name)} sudah masuk · Bedug`;
-          return;
-        }
-        if (!next) {
-          setText('next-name', '…');
-          setText('countdown', '--:--:--');
-          setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : 'Memuat jadwal…');
-          document.title = 'Bedug · Jadwal Sholat';
-          return;
-        }
-        const left = formatCountdown(next.at - now);
-        setText('next-name', label(next.name));
-        setText('countdown', left);
-        setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
-        document.title = `${left} · ${label(next.name)} · Bedug`;
+      if (!next) {
+        setText('next-name', '…');
+        setText('countdown', '--:--:--');
+        setText('next-at', loadFailed ? 'Jadwal belum bisa dimuat' : 'Memuat jadwal…');
+        document.title = 'Bedug · Jadwal Sholat';
+        return;
       }
+      const left = formatCountdown(next.at - now);
+      setText('next-name', label(next.name));
+      setText('countdown', left);
+      setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
+      document.title = `${left} · ${label(next.name)} · Bedug`;
+    }
 
-      /** The status when nothing went wrong. */
-      function quietStatus() {
-        if (cityNote) setStatus(cityNote);
-        else if (!chosen) setStatus(`Jadwal untuk ${titleCase(city.name)}.`, { label: 'Pakai lokasi saya', run: locate });
-        else setStatus('');
-      }
+    /** The status when nothing went wrong. */
+    function quietStatus() {
+      if (cityNote) setStatus(cityNote);
+      else if (!chosen) setStatus(`Jadwal untuk ${titleCase(city.name)}.`, { label: 'Pakai lokasi saya', run: locate });
+      else setStatus('');
+    }
 
-      function setCity(c: City, note = '') {
-        city = c;
-        chosen = true;
-        cityNote = note;
-        citySelect.value = c.id;
-        $('city-name').textContent = titleCase(c.name);
-        store.set('bedug:city', c.id);
-        history.replaceState(null, '', `?kota=${c.id}`);
-        refresh();
-      }
-
-      function openSettings() {
-        $<HTMLDetailsElement>('settings').open = true;
-        citySelect.focus();
-      }
-
-      function locate() {
-        if (!('geolocation' in navigator)) return setStatus('Browser ini tidak mendukung lokasi.');
-        setStatus('Mencari lokasi…');
-        navigator.geolocation.getCurrentPosition(
-          ({ coords }) => {
-            const { city: c, km } = nearestCity(coords.latitude, coords.longitude);
-            setCity(c, km > 150 ? `Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '');
-          },
-          (e) => {
-            const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
-            setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: openSettings });
-          },
-          { timeout: 10_000, maximumAge: 3_600_000 },
-        );
-      }
-
-      citySelect.addEventListener('change', () => setCity(cityById(citySelect.value)!));
-      sourceSelect.addEventListener('change', () => {
-        preferred = sourceSelect.value as SourceId;
-        store.set('bedug:source', preferred);
-        refresh();
-      });
-      $('locate').addEventListener('click', locate);
-      $('change-city').addEventListener('click', openSettings);
-      $('status-action').addEventListener('click', () => statusAction?.());
-
-      citySelect.value = city.id;
-      $('city-name').textContent = titleCase(city.name);
-      sourceSelect.value = preferred;
+    function setCity(c: City, note = '') {
+      city = c;
+      chosen = true;
+      cityNote = note;
+      citySelect.value = c.id;
+      $('city-name').textContent = titleCase(c.name);
+      store.set('bedug:city', c.id);
+      history.replaceState(null, '', `?kota=${c.id}`);
       refresh();
-      setInterval(tick, 1000);
-    </script>
+    }
 
-    <style is:global>
-      :root {
-        color-scheme: light dark;
-        --bg: #f5efe4;
-        --ink: #2b2118;
-        --muted: #6b5e50;
-        --line: #e2d7c5;
-        --accent: #8f3f12;
-        --accent-soft: #ead6c2;
-        --skin: #efe2c8;
-        --rim: #6f2e17;
-        --peg: #9a5a37;
-        --peg-on: #f2c46b;
-        --skin-now: #f3d79a;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #16110c;
-          --ink: #f0e7d9;
-          --muted: #a2927f;
-          --line: #33291f;
-          --accent: #e8955b;
-          --accent-soft: #3a2616;
-          --skin: #2a1f15;
-          --rim: #5a2a16;
-          --peg: #7a4a2c;
-          --peg-on: #f0b660;
-          --skin-now: #4a3216;
-        }
-      }
-      * { box-sizing: border-box; }
-      html { scrollbar-color: var(--line) var(--bg); caret-color: var(--accent); accent-color: var(--accent); }
-      ::selection { background: var(--accent-soft); color: var(--ink); }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--ink);
-        font: 16px/1.5 'Familjen Grotesk Variable', system-ui, sans-serif;
-      }
-      main {
-        max-width: 28rem;
-        margin: 0 auto;
-        padding: 2rem 1rem 3rem;
-      }
-      header { text-align: center; }
-      .brand { display: flex; justify-content: center; align-items: center; gap: 0.4rem; margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
-      .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
-      h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
-      #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
-      #today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-      .hero { margin: 2rem 0 1.5rem; }
-      .hero p { margin: 0; }
-      .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
-      .drum > * { grid-area: 1 / 1; }
-      .drum svg { width: 100%; height: 100%; }
-      .rim { fill: var(--rim); }
-      .skin { fill: var(--skin); }
-      .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
-      #pegs circle { fill: var(--peg); transition: fill 250ms ease-out; }
-      #pegs circle.lit { fill: var(--peg-on); }
-      .skin { transition: fill 250ms ease-out; transform-box: fill-box; transform-origin: center; }
-      [data-state='soon'] #countdown { color: var(--accent); }
-      [data-state='now'] .skin { fill: var(--skin-now); animation: strike 700ms cubic-bezier(0.16, 1, 0.3, 1) 3; }
-      [data-state='now'] #countdown { font-size: clamp(2rem, 9vw, 2.75rem); }
-      [data-state='now'] #next-at { color: var(--ink); } /* muted fails 4.5:1 on the lit skin */
-      /* The drum is struck three times when a prayer arrives. */
-      @keyframes strike {
-        from { transform: scale(1.03); }
-        to { transform: scale(1); }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        [data-state='now'] .skin { animation: none; }
-      }
-      .face { text-align: center; }
-      #next-name { font-size: 1.35rem; font-weight: 600; }
-      #countdown {
-        font-size: clamp(2.75rem, 13vw, 3.5rem);
-        font-weight: 650;
-        line-height: 1.05;
-        letter-spacing: -0.02em;
-        font-variant-numeric: tabular-nums;
-      }
-      #next-at { color: var(--muted); }
-      #list-title { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 400; color: var(--muted); text-align: center; }
-      #times { list-style: none; padding: 0; margin: 0 0 2rem; border-top: 1px solid var(--line); }
-      #times li {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.7rem 0.9rem;
-        border-bottom: 1px solid var(--line);
-        font-size: 1.15rem;
-        font-variant-numeric: tabular-nums;
-      }
-      #times li.minor { font-size: 0.95rem; color: var(--muted); }
-      #times li.past { color: var(--muted); }
-      #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 650; border-radius: 0.4rem; }
-      #settings summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.5rem; }
-      #settings form { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
-      #settings label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
-      select, button {
-        font: inherit;
-        font-size: 1rem;
-        color: var(--ink);
-        background: transparent;
-        border: 1px solid var(--line);
-        border-radius: 0.4rem;
-        padding: 0.55rem 0.6rem;
-        width: 100%;
-      }
-      #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
-      #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-      #locate .dot { fill: currentColor; stroke: none; }
-      button { cursor: pointer; border-color: var(--accent); color: var(--accent); }
-      @media (hover: hover) { button:hover { background: var(--accent-soft); } }
-      #settings summary::marker { color: var(--accent); }
-      select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      #status { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
-      #status button { width: auto; margin-left: 0.25rem; padding: 0.3rem 0.8rem; font-size: 0.9rem; }
-    </style>
-  </body>
-</html>
+    function openSettings() {
+      $<HTMLDetailsElement>('settings').open = true;
+      citySelect.focus();
+    }
+
+    function locate() {
+      if (!('geolocation' in navigator)) return setStatus('Browser ini tidak mendukung lokasi.');
+      setStatus('Mencari lokasi…');
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const { city: c, km } = nearestCity(coords.latitude, coords.longitude);
+          setCity(c, km > 150 ? `Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '');
+        },
+        (e) => {
+          const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
+          setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: openSettings });
+        },
+        { timeout: 10_000, maximumAge: 3_600_000 },
+      );
+    }
+
+    citySelect.addEventListener('change', () => setCity(cityById(citySelect.value)!));
+    sourceSelect.addEventListener('change', () => {
+      preferred = sourceSelect.value as SourceId;
+      store.set('bedug:source', preferred);
+      refresh();
+    });
+    $('locate').addEventListener('click', locate);
+    $('change-city').addEventListener('click', openSettings);
+    $('status-action').addEventListener('click', () => statusAction?.());
+
+    citySelect.value = city.id;
+    $('city-name').textContent = titleCase(city.name);
+    sourceSelect.value = preferred;
+    refresh();
+    setInterval(tick, 1000);
+  </script>
+
+  <style is:global>
+    .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
+    h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
+    #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
+    #today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+    .hero { margin: 2rem 0 1.5rem; }
+    .hero p { margin: 0; }
+    .drum { display: grid; place-items: center; width: min(84vw, 21rem); aspect-ratio: 1; margin: 0 auto; }
+    .drum > * { grid-area: 1 / 1; }
+    .drum svg { width: 100%; height: 100%; }
+    .rim { fill: var(--rim); }
+    .skin { fill: var(--skin); }
+    .skin-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+    #pegs circle { fill: var(--peg); transition: fill 250ms ease-out; }
+    #pegs circle.lit { fill: var(--peg-on); }
+    .skin { transition: fill 250ms ease-out; transform-box: fill-box; transform-origin: center; }
+    [data-state='soon'] #countdown { color: var(--accent); }
+    [data-state='now'] .skin { fill: var(--skin-now); animation: strike 700ms cubic-bezier(0.16, 1, 0.3, 1) 3; }
+    [data-state='now'] #countdown { font-size: clamp(2rem, 9vw, 2.75rem); }
+    [data-state='now'] #next-at { color: var(--ink); } /* muted fails 4.5:1 on the lit skin */
+    /* The drum is struck three times when a prayer arrives. */
+    @keyframes strike {
+      from { transform: scale(1.03); }
+      to { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      [data-state='now'] .skin { animation: none; }
+    }
+    .face { text-align: center; }
+    #next-name { font-size: 1.35rem; font-weight: 600; }
+    #countdown {
+      font-size: clamp(2.75rem, 13vw, 3.5rem);
+      font-weight: 650;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    #next-at { color: var(--muted); }
+    #list-title { margin: 0 0 0.5rem; font-size: 0.9rem; font-weight: 400; color: var(--muted); text-align: center; }
+    #times { list-style: none; padding: 0; margin: 0 0 2rem; border-top: 1px solid var(--line); }
+    #times li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      font-size: 1.15rem;
+      font-variant-numeric: tabular-nums;
+    }
+    #times li.minor { font-size: 0.95rem; color: var(--muted); }
+    #times li.past { color: var(--muted); }
+    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 650; border-radius: 0.4rem; }
+    #settings summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; text-align: center; padding: 0.5rem; }
+    #settings form { display: grid; gap: 0.75rem; margin-top: 0.75rem; }
+    #settings label { display: grid; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+    #locate { display: flex; justify-content: center; align-items: center; gap: 0.4rem; }
+    #locate svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+    #locate .dot { fill: currentColor; stroke: none; }
+    #settings summary::marker { color: var(--accent); }
+    #status { margin: 0 0 1.5rem; color: var(--muted); font-size: 0.9rem; text-align: center; }
+    #status button { width: auto; margin-left: 0.25rem; padding: 0.3rem 0.8rem; font-size: 0.9rem; }
+  </style>
+</Base>
