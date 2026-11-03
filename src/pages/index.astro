@@ -18,7 +18,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
-        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi"> lagi</span></p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden"> lagi</span></p>
         <p id="next-at">pukul ‒‒:‒‒ WIB</p>
       </section>
       <PanelBoot linked fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
