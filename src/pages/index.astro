@@ -21,7 +21,11 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
   <body>
     <main>
       <header>
-        <h1>Bedug</h1>
+        <p class="brand">Bedug</p>
+        <div class="place">
+          <h1 id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
+          <button type="button" id="change-city" aria-label="Ubah kota">Ubah</button>
+        </div>
         <p id="today">&nbsp;</p>
       </header>
 
@@ -94,7 +98,12 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* not persisted */ } },
       };
 
-      let city: City = cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+      // A shared link (?kota=<id>) wins over the stored city, and becomes the stored city.
+      const linked = cityById(new URLSearchParams(location.search).get('kota'));
+      let city: City = linked ?? cityById(store.get('bedug:city')) ?? cityById(DEFAULT_CITY_ID)!;
+      if (linked) store.set('bedug:city', linked.id);
+      let chosen = !!store.get('bedug:city') || !!linked; // until then, offer geolocation
+      let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
       let preferred: SourceId = store.get('bedug:source') === 'aladhan' ? 'aladhan' : 'myquran';
       let days: DaySchedule[] = [];
       let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
@@ -158,7 +167,8 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
           if (token !== loadToken) return; // a newer city/source choice won
           days = results.flatMap((r) => r.days).filter((d) => wanted.includes(d.date));
           const used = results[0].source;
-          setStatus(used.id === preferred ? '' : `${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
+          if (used.id === preferred) quietStatus();
+          else setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
         } catch (e) {
           if (token !== loadToken) return;
           days = [];
@@ -177,7 +187,7 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
 
         $('today').textContent =
           `${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[city.utcOffset] }).format(now)}` +
-          ` · ${titleCase(city.name)} · ${cityClock(now, city.utcOffset)} ${zone}`;
+          ` · ${cityClock(now, city.utcOffset)} ${zone}`;
 
         const todays = days.find((d) => d.date === today);
         const next = nextPrayer(days, now, city.utcOffset);
@@ -202,11 +212,27 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         document.title = `${left} · ${label(next.name)} · Bedug`;
       }
 
-      function setCity(c: City) {
+      /** The status when nothing went wrong. */
+      function quietStatus() {
+        if (cityNote) setStatus(cityNote);
+        else if (!chosen) setStatus(`Jadwal untuk ${titleCase(city.name)}.`, { label: 'Pakai lokasi saya', run: locate });
+        else setStatus('');
+      }
+
+      function setCity(c: City, note = '') {
         city = c;
+        chosen = true;
+        cityNote = note;
         citySelect.value = c.id;
+        $('city-name').textContent = titleCase(c.name);
         store.set('bedug:city', c.id);
+        history.replaceState(null, '', `?kota=${c.id}`);
         refresh();
+      }
+
+      function openSettings() {
+        $<HTMLDetailsElement>('settings').open = true;
+        citySelect.focus();
       }
 
       function locate() {
@@ -215,12 +241,11 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         navigator.geolocation.getCurrentPosition(
           ({ coords }) => {
             const { city: c, km } = nearestCity(coords.latitude, coords.longitude);
-            setCity(c);
-            if (km > 150) setStatus(`Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.`);
+            setCity(c, km > 150 ? `Kota terdekat ${titleCase(c.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '');
           },
           (e) => {
             const why = { 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' }[e.code] ?? 'Lokasi tidak tersedia';
-            setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}; pilih kota di bawah.`);
+            setStatus(`${why}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: openSettings });
           },
           { timeout: 10_000, maximumAge: 3_600_000 },
         );
@@ -233,12 +258,13 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         refresh();
       });
       $('locate').addEventListener('click', locate);
+      $('change-city').addEventListener('click', openSettings);
       $('status-action').addEventListener('click', () => statusAction?.());
 
       citySelect.value = city.id;
+      $('city-name').textContent = titleCase(city.name);
       sourceSelect.value = preferred;
       refresh();
-      if (!store.get('bedug:city')) locate(); // first visit: try to find the user, Jakarta meanwhile
       setInterval(tick, 1000);
     </script>
 
@@ -275,13 +301,10 @@ const label = (t: string) => t[0].toUpperCase() + t.slice(1);
         padding: 2rem 1rem 3rem;
       }
       header { text-align: center; }
-      h1 {
-        margin: 0;
-        font-size: 0.85rem;
-        letter-spacing: 0.3em;
-        text-transform: uppercase;
-        color: var(--accent);
-      }
+      .brand { margin: 0 0 0.75rem; font-weight: 650; color: var(--accent); }
+      .place { display: flex; justify-content: center; align-items: baseline; gap: 0.5rem; }
+      h1 { margin: 0; font-size: 1.35rem; line-height: 1.25; }
+      #change-city { width: auto; padding: 0.15rem 0.6rem; font-size: 0.85rem; }
       #today { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
       .hero { text-align: center; margin: 2.5rem 0 2rem; }
       .hero p { margin: 0; }
