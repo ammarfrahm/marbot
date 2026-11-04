@@ -1,0 +1,438 @@
+---
+import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
+import { PRAYERS, capitalise, TIMES } from '../lib/schedule';
+import { SOURCES } from '../lib/sources';
+import Base from '../layouts/Base.astro';
+import CityDialog from '../components/CityDialog.astro';
+import PanelBoot from '../components/PanelBoot.astro';
+
+---
+
+<Base title="Jadwal Sholat · Marbot" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
+    <Fragment slot="header">
+      <div class="place">
+        <h1 id="city-name" tabindex="-1">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
+        <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
+      </div>
+      <p id="today">&nbsp;</p>
+      <p id="hijri">&nbsp;</p>
+      <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
+        <p id="next-name">…</p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden"> lagi</span></p>
+        <p id="next-at">pukul ‒‒:‒‒ WIB</p>
+      </section>
+      <PanelBoot linked fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
+    </Fragment>
+
+    <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
+    <ol id="times" class="card" aria-labelledby="list-title">
+      {
+        TIMES.map((t) => (
+          <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
+            <span>{capitalise(t)}</span>
+            <time>‒‒:‒‒</time>
+          </li>
+        ))
+      }
+    </ol>
+
+    <p id="status" role="status"><span id="status-line" hidden><span id="status-text" tabindex="-1"></span> <button type="button" id="status-action" hidden></button></span></p>
+
+    <div id="foot">
+      <p id="source-note">&nbsp;</p>
+      <button type="button" id="share">Bagikan</button>
+    </div>
+
+    <CityDialog title="Kota & sumber jadwal">
+      <label>
+        Sumber
+        <select id="source" aria-describedby="source-hint">
+          {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
+        </select>
+      </label>
+      <p id="source-hint" hidden>Di luar Indonesia hanya Aladhan.</p>
+    </CityDialog>
+
+    <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
+
+  <script>
+    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
+    import {
+      formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, rowInstant, zoneLabel, type DaySchedule, type TimeName,
+    } from '../lib/schedule';
+    import { formatHijri, toHijri } from '../lib/hijri';
+    import { creditFor, SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
+    import { $, setText } from '../lib/dom';
+    import { saveCity, savedCity, store, storeKey } from '../lib/store';
+    import { initCityDialog, locatedChange, locatePlace } from '../lib/city-dialog';
+
+    const sourceSelect = $<HTMLSelectElement>('source');
+
+    // A shared link (?kota=<id>) is shown for this view and never stored unasked.
+    const linked = placeById(new URLSearchParams(location.search).get('kota'));
+    const stored = savedCity();
+    let city: Place = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
+    let toSave: string | null = null; // a picked city is stored only once its schedule has loaded
+    let chosen = !!stored || !!linked; // until then, offer geolocation
+    let cityNote = ''; // e.g. the note after locating or opening a link; kept until the city changes
+    let cityAction: { label: string; run: () => void } | undefined;
+    if (linked && offerLinked(linked, stored)) {
+      cityNote = linked.kind === 'city' ? `Jadwal ${placeName(linked)} dari tautan.` : 'Jadwal titik ini dari tautan.';
+      cityAction = {
+        label: 'Simpan sebagai kota saya',
+        run: () => {
+          saveCity(linked);
+          cityNote = `${placeName(linked)} disimpan sebagai kota Anda.`; // stays until the next city change
+          cityAction = undefined;
+          quietStatus();
+        },
+      };
+    }
+    let preferred: SourceId = store.get(storeKey('source')) === 'aladhan' ? 'aladhan' : 'myquran';
+    let days: DaySchedule[] = [];
+    let loadedFor = ''; // `${cityId}:${date in the city}` the current `days` were loaded for
+    let loadToken = 0;
+    let loadFailed = false;
+    let retry = ''; // set when tomorrow's month is missing: appended to the status
+    let partial = false; // today loaded, but yesterday's or tomorrow's month is missing
+
+
+    /** The digits, plus the word that makes them "left" rather than a clock time. */
+    const setCountdown = (text: string, remaining = false, placeholder = false) => {
+      setText('cd-left', text);
+      $('cd-lagi').hidden = !remaining && !placeholder;
+      $('cd-lagi').style.visibility = remaining ? '' : 'hidden'; // placeholder keeps its room, so the line does not reflow
+    };
+
+    let statusAction: (() => void) | null = null;
+    function setStatus(text: string, action?: { label: string; run: () => void }) {
+      const button = $<HTMLButtonElement>('status-action');
+      const hadFocus = document.activeElement === button;
+      setText('status-text', text);
+      if ($('status-line').hidden === !!text) $('status-line').hidden = !text;
+      if (button.hidden === !!action) button.hidden = !action;
+      if (button.textContent !== (action?.label ?? '')) button.textContent = action?.label ?? '';
+      statusAction = action?.run ?? null;
+      // A focused button that disappears would drop focus to the page; keep it nearby.
+      if (hadFocus && !action) $(text ? 'status-text' : 'city-name').focus();
+    }
+
+    /** Why a source failed, in words a reader can act on. */
+    function describeError(e: unknown): string {
+      if (e instanceof DOMException && e.name === 'TimeoutError') return 'server tidak menjawab';
+      if (e instanceof TypeError) return navigator.onLine ? 'server tidak bisa dihubungi' : 'tidak ada koneksi internet';
+      const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
+      return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
+    }
+
+    // AbortSignal.timeout is missing on iOS 15, so time out by hand; describeError keys on the name.
+    async function fetchWithTimeout(url: string, ms = 10_000) {
+      const ctl = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, ms);
+      try {
+        return await fetch(url, { signal: ctl.signal });
+      } catch (e) {
+        throw timedOut ? new DOMException('timeout', 'TimeoutError') : e;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    const DAY_MS = 86_400_000;
+    const refetching = new Set<string>();
+
+    async function fetchMonth(source: Source, c: Place, ym: string, key: string): Promise<DaySchedule[]> {
+      const [y, m] = ym.split('-').map(Number);
+      const res = await fetchWithTimeout(source.url(c, y, m));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const month = source.parse(await res.json());
+      store.set(key, JSON.stringify({ fetched: Date.now(), days: month }));
+      return month;
+    }
+
+    // Cache first; a cached month older than a day is refetched quietly and used from the next load on.
+    async function loadMonth(c: Place, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
+      let firstError: unknown;
+      for (const source of sourcesFor(c, preferred)) {
+        const key = storeKey(source.id, c.id, ym);
+        try {
+          const raw = store.get(key);
+          if (raw) {
+            const cached = parseCachedMonth(raw);
+            if (navigator.onLine && Date.now() - cached.fetched > DAY_MS && !refetching.has(key)) {
+              refetching.add(key);
+              fetchMonth(source, c, ym, key).catch(() => {}).finally(() => refetching.delete(key));
+            }
+            return { source, days: cached.days };
+          }
+          return { source, days: await fetchMonth(source, c, ym, key) };
+        } catch (e) {
+          firstError ??= e;
+        }
+      }
+      throw firstError;
+    }
+
+    async function refresh() {
+      const token = ++loadToken;
+      const now = Date.now();
+      // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
+      const wanted = [-1, 0, 1].map((d) => placeDate(now, city.tz, d));
+      loadedFor = `${city.id}:${wanted[1]}`;
+      const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
+      const merged = mergeMonths(wanted, wanted[1], months, await Promise.allSettled(months.map((ym) => loadMonth(city, ym))));
+      if (token !== loadToken) return; // a newer city/source choice won
+      if (merged.ok) {
+        days = merged.days;
+        loadFailed = false;
+        partial = merged.partial;
+        if (toSave === city.id) saveCity(city);
+        toSave = null;
+        const used = merged.today.source;
+        setText('source-note', creditFor(city, used));
+        const noTomorrow = !days.some((d) => d.date === wanted[2]);
+        retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
+        const first = sourcesFor(city, preferred)[0];
+        if (used.id !== first.id) setStatus(`${first.name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
+        else quietStatus();
+        // Offline waits for the online event; online retries like a failed load.
+        if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
+        // Online now: save next month too, so the last day of a month still works offline.
+        const [y, m] = wanted[1].split('-').map(Number);
+        const nextMonth = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
+        if (navigator.onLine && !months.includes(nextMonth)) loadMonth(city, nextMonth).catch(() => {});
+      } else {
+        days = [];
+        setText('source-note', '\u00a0');
+        loadFailed = true;
+        partial = false;
+        // Way back offline: the saved city, else the default one if its month is on the device.
+        const saved = savedCity();
+        const fallback = cityById(DEFAULT_CITY_ID)!;
+        const ym = placeDate(now, fallback.tz).slice(0, 7);
+        const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
+        if (!navigator.onLine && back && back.id !== city.id) {
+          const heldNow = left;
+          setStatus(`Jadwal ${placeName(city)} belum tersimpan. Sambungkan internet sekali.`, {
+            label: `Kembali ke ${placeName(back)}`,
+            run: () => setCity(back, '', undefined, heldNow, !!saved), // the default fallback is shown, not saved
+          });
+        } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
+        setTimeout(() => token === loadToken && refresh(), 60_000);
+      }
+      tick();
+    }
+
+    const SOON_MS = 10 * 60_000;
+    const ARRIVED_MS = 10 * 60_000;
+    const dateFormats: Record<string, Intl.DateTimeFormat> = {};
+    const dateFormat = (tz: string) => (dateFormats[tz] ??= new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: tz }));
+
+    function tick() {
+      const now = Date.now();
+      const zone = zoneLabel(city.tz, now);
+      const today = placeDate(now, city.tz);
+      if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
+
+      setText('today', `${dateFormat(city.tz).format(now)} · ${placeClock(now, city.tz)} ${zone}`);
+      const hijri = toHijri(today);
+      setText('hijri', hijri ? formatHijri(hijri) : '\u00a0');
+
+      const next = nextPrayer(days, now, city.tz);
+      const last = lastPrayer(days, now, city.tz);
+      // A prayer stays "arrived" for a while; before that, the last minutes count down in accent.
+      const arrived = last && now - last.at < ARRIVED_MS ? last : null;
+      const shown = arrived ?? next;
+      $('hero').dataset.state =
+        !next ? (loadFailed || partial ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
+
+      // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
+      const listDate = shown?.date ?? today;
+      const listed = days.find((d) => d.date === listDate);
+      setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
+      for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
+        const t = li.dataset.time as TimeName;
+        const cell = li.querySelector('time')!;
+        const hhmm = listed?.[t] ?? '‒‒:‒‒';
+        const iso = listed ? `${listDate}T${hhmm}` : '';
+        if (cell.textContent !== hhmm || (cell.getAttribute('datetime') ?? '') !== iso) {
+          cell.textContent = hhmm;
+          if (iso) cell.setAttribute('datetime', iso);
+          else cell.removeAttribute('datetime');
+        }
+        const current = shown?.name === t;
+        li.classList.toggle('next', current);
+        if (current) li.setAttribute('aria-current', 'time');
+        else li.removeAttribute('aria-current');
+        li.classList.toggle('past', !!listed && rowInstant(listed, t, city.tz) <= now);
+      }
+
+      if (arrived) {
+        setText('next-name', capitalise(arrived.name));
+        setCountdown('Sudah masuk');
+        setText('next-at', `sejak ${arrived.time} ${zone}`);
+        document.title = `${capitalise(arrived.name)} sudah masuk · Marbot`;
+        return;
+      }
+      if (!next) {
+        // Partial after Isya: tomorrow's month is the one missing, so the next prayer is certainly Subuh.
+        setText('next-name', !loadFailed && partial && last?.name === 'isya' ? 'Subuh' : '…');
+        setCountdown('‒‒:‒‒:‒‒', false, true);
+        setText('next-at', loadFailed ? 'Belum bisa dimuat' : partial ? 'Besok belum tersedia' : `pukul ‒‒:‒‒ ${zone}`);
+        document.title = 'Jadwal Sholat · Marbot';
+        return;
+      }
+      const left = formatCountdown(next.at - now);
+      setText('next-name', capitalise(next.name));
+      setCountdown(left, true);
+      setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
+      document.title = `${left} · ${capitalise(next.name)} · Marbot`;
+    }
+
+    /** The status when nothing went wrong. */
+    function quietStatus() {
+      // A missing tomorrow joins whatever note or prompt is showing, so neither hides the other.
+      const join = (t: string) => (retry ? `${t} ${retry}` : t);
+      if (cityNote) setStatus(join(cityNote), cityAction);
+      else if (!chosen) setStatus(join(`Jadwal untuk ${placeName(city)}.`), { label: 'Pakai lokasi saya', run: locate });
+      else setStatus(retry);
+    }
+
+    /** The days held for the city we just left: a way back shows them at once; any other city shows loading, never these. */
+    let left: { cityId: string; days: DaySchedule[] } = { cityId: '', days: [] };
+
+    function setCity(c: Place, note = '', back?: Place, held?: typeof left, persist = true) {
+      left = { cityId: city.id, days };
+      days = daysWhileLoading(held, c.id);
+      loadFailed = false;
+      partial = false;
+      city = c;
+      chosen = persist; // the unsaved default fallback keeps the first-visit prompt
+      cityNote = note;
+      const heldNow = left;
+      retry = '';
+      cityAction = back && { label: `Kembali ke ${placeName(back)}`, run: () => setCity(back, '', undefined, heldNow) };
+      $('city-name').textContent = placeName(c);
+      syncSource();
+      toSave = persist ? c.id : null;
+      history.replaceState(null, '', persist ? `?kota=${encodeURIComponent(c.id)}` : location.pathname);
+      quietStatus();
+      refresh(); // sets loadedFor, so the tick below paints the loading state
+      tick();
+    }
+
+    function locate() {
+      setStatus('Mencari lokasi…');
+      locatePlace().then(
+        (place) => {
+          const { note, back } = locatedChange(city, place);
+          setCity(place, note, back);
+        },
+        (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${placeName(city)}.`, { label: 'Pilih kota', run: cityDialog.open }),
+      );
+    }
+
+    /** A located place has one source, so the choice is shown as Aladhan and cannot be changed until a kab/kota is picked. */
+    function syncSource() {
+      sourceSelect.value = sourcesFor(city, preferred)[0].id;
+      sourceSelect.disabled = city.kind === 'spot';
+      $('source-hint').hidden = city.kind !== 'spot';
+    }
+    const cityDialog = initCityDialog({ current: () => city, pick: setCity });
+    sourceSelect.addEventListener('change', () => {
+      preferred = sourceSelect.value as SourceId;
+      store.set(storeKey('source'), preferred);
+      refresh();
+    });
+    addEventListener('online', () => (loadFailed || partial) && refresh());
+    $('status-action').addEventListener('click', () => statusAction?.());
+    /** A short message that gives the status back, with its action, unless something newer replaced it. */
+    let flashed: { msg: string; prev: string; action?: { label: string; run: () => void } } | null = null;
+    let flashTimer = 0;
+    function flash(msg: string) {
+      const showing = $('status-text').textContent ?? '';
+      // A flash over a flash gives back the status from before the first one.
+      const keep = flashed && showing === flashed.msg ? flashed
+        : { prev: showing, action: $('status-action').hidden ? undefined : { label: $('status-action').textContent ?? '', run: statusAction! } };
+      flashed = { ...keep, msg };
+      setStatus(msg);
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => {
+        const f = flashed!;
+        flashed = null;
+        if ($('status-text').textContent === f.msg) setStatus(f.prev, f.action);
+      }, 4000);
+    }
+    $('share').addEventListener('click', async () => {
+      const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
+      try {
+        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeName(city)}`, url });
+        else {
+          await navigator.clipboard.writeText(url);
+          flash('Tautan disalin.');
+        }
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') flash('Tautan tidak bisa dibagikan.');
+      }
+    });
+
+    $('city-name').textContent = placeName(city);
+    syncSource();
+    refresh();
+    setInterval(tick, 1000);
+  </script>
+
+  <style is:global>
+    #today, #hijri { color: var(--on-panel-muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+    #today { margin-top: 0.35rem; }
+    .hero { margin-top: 1.75rem; }
+    #next-name { font-size: var(--fs-xl); font-weight: 600; }
+    #countdown {
+      font-size: min(var(--fs-display), 19vw); /* big text settings must not push it off a phone */
+      font-weight: 300;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    #cd-lagi { font-size: var(--fs-md); font-weight: 400; letter-spacing: 0; color: var(--on-panel-muted); }
+    #next-at { color: var(--on-panel-muted); font-variant-numeric: tabular-nums; }
+    [data-state='soon'] #countdown { font-weight: 600; }
+    [data-state='soon'] #next-at { color: var(--on-panel); }
+    [data-state='now'] #countdown { font-size: min(var(--fs-display-sm), 12vw); font-weight: 400; }
+    #times { list-style: none; margin: 0; padding: 0.35rem; }
+    #times li {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0 1rem;
+      padding: 0.8rem 0.9rem 0.8rem 1.6rem;
+      font-size: var(--fs-lg);
+      font-variant-numeric: tabular-nums;
+    }
+    #times li + li { box-shadow: 0 -1px 0 var(--line); }
+    #times li.minor { font-size: var(--fs-md); color: var(--muted); }
+    #times li.past { color: var(--faint); }
+    #times li.next { background: var(--accent-soft); color: var(--accent); font-weight: 600; border-radius: var(--r-sm); box-shadow: none; }
+    #times li.next + li { box-shadow: none; }
+    #times li.next::before {
+      content: '';
+      position: absolute;
+      left: 0.7rem;
+      top: 50%;
+      width: 0.4rem;
+      height: 0.4rem;
+      margin-top: -0.2rem;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+    #list-title { margin-top: 0; }
+    #foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 1rem; margin: 0.75rem 0.25rem 0; }
+    #source-note { margin: 0; flex: 1 1 auto; color: var(--muted); font-size: var(--fs-sm); }
+    #status { margin: 0.75rem 0.25rem 0; min-height: 3em; color: var(--muted); font-size: var(--fs-sm); }
+    @media (min-width: 60rem) { #status { min-height: 1.5em; } } /* the column is wide enough for one line; phones keep room for two */
+    #share { width: auto; margin: -0.75rem -0.25rem; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
+    #status button { width: auto; margin: -0.75rem 0 -0.75rem -0.25rem; padding: 0.75rem 0.25rem; border: 0; background: none; color: var(--accent); font-size: var(--fs-sm); text-decoration: underline; }
+  </style>
+</Base>
