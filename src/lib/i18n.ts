@@ -1,7 +1,7 @@
 import type { TimeName } from './schedule';
 
 /** The interface languages. Indonesian is the default and the source: every other language must satisfy its shape. */
-export type Lang = 'id';
+export type Lang = 'id' | 'en';
 
 const id = {
   /** The Intl locale for dates and numbers. */
@@ -165,7 +165,160 @@ const id = {
 /** The shape every language must fill. */
 export type Strings = typeof id;
 
-export const STRINGS: Record<Lang, Strings> = { id };
+const en: Strings = {
+  locale: 'en-GB',
+  zoneLocale: 'en-GB',
+  decimal: '.',
+  otherLang: 'Bahasa Indonesia',
+  menu: 'Menu',
+  tabs: { jadwal: 'Times', kiblat: 'Qibla', kalender: 'Calendar' },
+  prayer: { imsak: 'Imsak', subuh: 'Fajr', terbit: 'Sunrise', dzuhur: 'Dhuhr', ashar: 'Asr', maghrib: 'Maghrib', isya: 'Isha' },
+
+  change: 'Change',
+  changeCity: 'Change city',
+  searching: 'Finding your location…',
+  backTo: (name) => `Back to ${name}`,
+  fromPlace: (name) => `from ${name}`,
+  noGeolocation: 'This browser does not support location',
+  noTimeZone: 'The device time zone is not recognised',
+  geo: { 1: 'Location permission denied', 2: 'Location not found', 3: 'Finding your location took too long', other: 'Location unavailable' },
+  located: { outside: 'Outside Indonesia: times are calculated from your location.', city: (name) => `Your location: ${name}.` },
+  hemisphere: { N: 'N', S: 'S', E: 'E', W: 'W' },
+  spotLabel: (name, region) => `${name} (${region} time zone)`,
+
+  dialog: {
+    title: 'Change city',
+    city: 'City',
+    placeholder: 'Type a city name',
+    help: 'Type a city or regency name, then pick it from the list.',
+    myLocation: 'My location',
+    done: 'Done',
+    changed: (name) => `City changed to ${name}.`,
+    locateFailed: (reason) => `${reason}. Type a city name above.`,
+    none: (locate) => `No city found. Try another name${locate ? ', or use My location' : ''}.`,
+    many: (count, shown, more) => `${count} cities match: ${shown}${more ? ', etc.' : ''} — pick one from the list.`,
+  },
+
+  sources: {
+    myquran: 'myQuran · official Kemenag times',
+    aladhan: 'Aladhan · calculated, may be 2–4 minutes early',
+    credit: (credit) => `Source: ${credit}`,
+    spot: (method) => `Calculated from this point (Aladhan, ${method} method). Not the Kemenag schedule.`,
+    kemenagAngles: 'Kemenag angles',
+    mwl: 'MWL',
+  },
+
+  hijri: {
+    months: ['Muharram', 'Safar', "Rabi' al-Awwal", "Rabi' al-Thani", 'Jumada al-Ula', 'Jumada al-Akhirah', 'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', "Dhu al-Qa'dah", 'Dhu al-Hijjah'],
+    era: 'AH',
+    days: {
+      newYear: 'Islamic New Year',
+      ashura: 'Ashura',
+      mawlid: "Mawlid (Prophet's birthday)",
+      isra: "Isra and Mi'raj",
+      nisfu: "Nisfu Sha'ban",
+      ramadan: 'First of Ramadan',
+      nuzul: 'Nuzul al-Quran',
+      fitr: 'Eid al-Fitr',
+      arafah: 'Day of Arafah',
+      adha: 'Eid al-Adha',
+    },
+  },
+
+  jadwal: {
+    title: 'Prayer Times · Marbot',
+    description: "Today's prayer times and a countdown to the next prayer.",
+    needJs: 'Marbot needs JavaScript to show the prayer times.',
+    left: ' left',
+    at: (time, zone) => `at ${time} ${zone}`,
+    tomorrowAt: (time, zone) => `tomorrow at ${time} ${zone}`,
+    since: (time, zone) => `since ${time} ${zone}`,
+    arrived: 'Time has come',
+    arrivedTitle: (name) => `${name} has come · Marbot`,
+    notLoaded: 'Could not load yet',
+    tomorrowMissing: "Tomorrow's times are not available yet",
+    listToday: "Today's times",
+    listTomorrow: "Tomorrow's times",
+    dialogTitle: 'City & source',
+    source: 'Source',
+    onlyAladhan: 'Outside Indonesia only Aladhan is available.',
+    share: 'Share',
+    shareTitle: (name) => `Prayer times for ${name}`,
+    linkCopied: 'Link copied.',
+    linkFailed: 'The link could not be shared.',
+    linkedCity: (name) => `Times for ${name}, from the link.`,
+    linkedSpot: 'Times for this point, from the link.',
+    saveCity: 'Save as my city',
+    citySaved: (name) => `${name} saved as your city.`,
+    tomorrowRetry: "Tomorrow's times could not be loaded; trying again every minute.",
+    tomorrowOffline: "Tomorrow's times are not saved yet; connect to the internet briefly.",
+    sourceDown: (first, used) => `${first} is unavailable; times are from ${used}.`,
+    notSaved: (name) => `Times for ${name} are not saved yet. Connect to the internet once.`,
+    failed: (reason) => `${reason}. Trying again every minute.`,
+    retry: 'Try again',
+    scheduleFor: (name) => `Times for ${name}.`,
+    useMyLocation: 'Use my location',
+    keptCity: (reason, name) => `${reason}. Times stay for ${name}.`,
+    pickCity: 'Pick a city',
+    errors: {
+      timeout: 'the server did not respond',
+      unreachable: 'the server could not be reached',
+      offline: 'no internet connection',
+      server: (status) => `server problem (${status})`,
+      invalid: 'the schedule data is not valid',
+    },
+  },
+
+  kiblat: {
+    title: 'Qibla Direction · Marbot',
+    description: 'The qibla direction from your city or location, with a compass on your phone.',
+    needJs: 'Marbot needs JavaScript to work out the qibla direction.',
+    heading: 'Qibla direction',
+    cardinals: ['N', 'E', 'S', 'W'],
+    points: ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'],
+    fromNorth: 'from north',
+    loading: 'Loading…',
+    compassOn: 'Turn on compass',
+    locate: 'Calculate from my location',
+    factBearing: 'Bearing',
+    factDistance: 'Distance to the Ka’bah',
+    calibrate: 'A phone compass can be off by a few degrees near metal, magnets or electrical devices. If the direction jumps, move your phone in a figure of 8 to calibrate it.',
+    bearingFact: (deg, point) => `${deg}° from north, towards the ${point}`,
+    northTip: "Not sure where north is? The sun rises in the east.",
+    faceNorth: 'Point the N towards north, then follow the line to the Ka’bah.',
+    noCompass: (deg) => `No compass: use ${deg}° from north.`,
+    compassDenied: 'Compass permission denied.',
+    aligned: 'Qibla',
+    alignedLine: 'straight ahead',
+    turnRight: 'turn right',
+    turnLeft: 'turn left',
+    alignedHint: 'The top of your phone faces the qibla.',
+    liveHint: 'Hold your phone flat and turn until the mark at the top meets the Ka’bah.',
+    announceAligned: 'Facing the qibla',
+    announceTurn: (right, deg) => `Turn ${right ? 'right' : 'left'} ${deg}°`,
+    fromYou: (meters) => `from your location (±${meters} m)`,
+    keptCity: (reason, name) => `${reason}. The direction is still calculated from ${name}.`,
+    offlinePick: (name) => `Qibla calculated from ${name}. The city is not saved yet; pick it again when online.`,
+  },
+
+  kalender: {
+    title: 'Hijri Calendar · Marbot',
+    description: "Today's Hijri date, the next important days, and the Hijri month calendar.",
+    needJs: 'Marbot needs JavaScript to show the calendar.',
+    weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    upcoming: 'Next important days',
+    prev: 'Previous month',
+    next: 'Next month',
+    thisMonth: 'Back to this month',
+    none: 'No important days this month.',
+    note: 'Dates follow the MABIMS criteria used by Kemenag. The start of Ramadan, Shawwal and Dhu al-Hijjah is set at the isbat sitting, so it can shift by a day.',
+    unavailable: 'Calendar not available yet',
+    awaitingIsbat: 'Awaiting the isbat sitting',
+    inDays: (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`),
+  },
+};
+
+export const STRINGS: Record<Lang, Strings> = { id, en };
 
 /** The page's language, from <html lang>; Indonesian when it is anything else. */
 export const pageLang = (): Lang => (Object.hasOwn(STRINGS, document.documentElement.lang) ? (document.documentElement.lang as Lang) : 'id');

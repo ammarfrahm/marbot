@@ -7,6 +7,7 @@ import { ZONE_LABEL } from '../lib/schedule';
 
 /** `fill` maps an element id to a line: name, from, today, hijri or greg. Place it right after those elements. `linked`: the page honours a ?kota= link. */
 const { fill, linked = false, lang = 'id' } = Astro.props as { fill: Record<string, string>; linked?: boolean; lang?: Lang };
+const t = STRINGS[lang];
 const city = CITIES.find((c) => c.id === DEFAULT_CITY_ID)!;
 const lines = Object.values(fill);
 const dates = lines.some((line) => line === 'today' || line === 'hijri' || line === 'greg');
@@ -21,7 +22,8 @@ const cfg = {
   linked,
   def: { id: city.id, name: titleCase(city.name), tz: city.tz },
   cities,
-  months: STRINGS[lang].hijri.months,
+  t: { locale: t.locale, zoneLocale: t.zoneLocale, decimal: t.decimal, hemisphere: t.hemisphere, era: t.hijri.era, fromPrefix: t.fromPlace('') },
+  months: t.hijri.months,
   starts: dates ? table.starts : [],
   first: table.first,
   zones: ZONE_LABEL,

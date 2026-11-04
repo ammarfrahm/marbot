@@ -5,6 +5,7 @@ type Tab = 'jadwal' | 'kiblat' | 'kalender';
 type Props = { title: string; description: string; tab: Tab; lang?: Lang };
 const { title, description, tab, lang = 'id' } = Astro.props;
 const t = STRINGS[lang];
+const prefix = lang === 'id' ? '' : `/${lang}`;
 
 // Icons share one 24px grid and a 1.8 stroke.
 const TABS: { id: Tab; href: string; icon: string }[] = [
@@ -47,7 +48,7 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
     <nav class="tabs" aria-label={t.menu}>
       {
         TABS.map((x) => (
-          <a href={x.href} aria-current={x.id === tab ? 'page' : undefined}>
+          <a href={prefix + x.href} aria-current={x.id === tab ? 'page' : undefined}>
             <svg viewBox="0 0 24 24" aria-hidden="true" set:html={x.icon} />
             {t.tabs[x.id]}
           </a>

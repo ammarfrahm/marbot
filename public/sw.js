@@ -28,10 +28,10 @@ self.addEventListener('fetch', (event) => {
     caches
       .match(request, { ignoreSearch: navigate, ignoreVary: true }) // ?kota= links open the cached page; module requests send Origin, which precached ones lacked
       .then((hit) => hit ?? fetch(request))
-      .catch(() =>
-        navigate
-          ? caches.match(new URL(request.url).pathname.replace(/\/?$/, '/')).then((page) => page ?? caches.match('/')) // /kiblat is /kiblat/
-          : Response.error(),
-      ),
+      .catch(() => {
+        if (!navigate) return Response.error();
+        const path = new URL(request.url).pathname.replace(/\/?$/, '/'); // /kiblat is /kiblat/
+        return caches.match(path).then((page) => page ?? caches.match(path.startsWith('/en/') ? '/en/' : '/')); // an unknown English path opens English
+      }),
   );
 });
