@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { locatedChange } from '../src/lib/city-dialog';
-import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, placeById, placeName, spotAt, titleCase } from '../src/lib/cities';
+import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, placeAt, placeById, placeName, spotAt, titleCase } from '../src/lib/cities';
 
 describe('titleCase', () => {
   it('capitalises each word', () => expect(titleCase('KAB. BANDUNG BARAT')).toBe('Kab. Bandung Barat'));
@@ -57,15 +57,31 @@ describe('offerLinked', () => {
 describe('locatedChange', () => {
   const jakarta = CITIES.find((c) => c.id === '1301')!;
   const bandung = CITIES.find((c) => c.name === 'KOTA BANDUNG')!;
+  const london = placeById('geo:51.51,-0.13@Europe/London')!;
   it('says what was chosen and offers the way back', () => {
-    expect(locatedChange(jakarta, bandung, 12)).toEqual({ note: 'Lokasi Anda: Kota Bandung.', back: jakarta });
+    expect(locatedChange(jakarta, bandung)).toEqual({ note: 'Lokasi Anda: Kota Bandung.', back: jakarta });
   });
-  it('prefers the distance warning when the nearest city is far', () => {
-    const { note, back } = locatedChange(jakarta, bandung, 300);
-    expect(note).toBe('Kota terdekat Kota Bandung berjarak 300 km, jadwal mungkin tidak akurat.');
-    expect(back).toBe(jakarta);
+  it('says a place abroad is calculated from the location', () => {
+    expect(locatedChange(jakarta, london)).toEqual({ note: 'Di luar Indonesia: jadwal dihitung dari lokasi Anda.', back: jakarta });
   });
-  it('offers no way back when the city did not change', () => expect(locatedChange(jakarta, jakarta, 3).back).toBeUndefined());
+  it('offers no way back when the place did not change', () => {
+    expect(locatedChange(jakarta, jakarta).back).toBeUndefined();
+    expect(locatedChange(london, placeById(london.id)!).back).toBeUndefined();
+  });
+});
+
+describe('placeAt', () => {
+  it('picks the kab/kota within 150 km', () => {
+    expect(placeAt(-6.2, 106.8166, 'Asia/Jakarta')).toMatchObject({ kind: 'city', id: '1301' });
+    expect(placeAt(-6.2, 106.8166, 'Europe/London').kind).toBe('city'); // inside Indonesia the device zone is ignored
+  });
+  it('makes a spot in the device zone farther out', () => {
+    expect(placeAt(51.5074, -0.1278, 'Europe/London')).toMatchObject({ kind: 'spot', id: 'geo:51.51,-0.13@Europe/London' });
+    expect(placeAt(35.6762, 139.6503, 'Asia/Tokyo').id).toBe('geo:35.68,139.65@Asia/Tokyo');
+  });
+  it('makes a spot for a fix at sea beyond the nearest kab/kota', () => {
+    expect(placeAt(-20, 105, 'Asia/Jakarta').kind).toBe('spot');
+  });
 });
 
 describe('placeById', () => {

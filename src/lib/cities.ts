@@ -75,6 +75,14 @@ export function nearestCity(lat: number, lon: number): { city: City; km: number 
   return best;
 }
 
+const NEAR_KM = 150;
+
+/** Where coordinates are: the nearest kab/kota if one is within 150 km, else a Spot in the device's time zone. */
+export function placeAt(lat: number, lon: number, tz = Intl.DateTimeFormat().resolvedOptions().timeZone): Place {
+  const { city, km } = nearestCity(lat, lon);
+  return km <= NEAR_KM ? city : spotAt(lat, lon, tz);
+}
+
 /** Picker label: the province tells "Kab. Bandung" from "Kab. Bandung Barat" at a glance. */
 export const cityLabel = (p: Place) => (p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : `Lokasi Anda (sekitar ${p.region})`);
 

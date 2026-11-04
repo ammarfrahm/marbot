@@ -1,25 +1,24 @@
 import { geoReason } from './geo';
-import { cityLabel, matchCities, matchHint, nearestCity, placeName, titleCase, type City, type Place } from './cities';
+import { cityLabel, matchCities, matchHint, placeAt, placeName, type Place } from './cities';
 
-/** The nearest kab/kota to the device; rejects with a short reason ("Izin lokasi ditolak"). */
-export function locateNearest(): Promise<{ city: City; km: number }> {
+/** The device's place: a kab/kota near it, else a located Spot; rejects with a short reason ("Izin lokasi ditolak"). */
+export function locatePlace(): Promise<Place> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) return reject(new Error('Browser ini tidak mendukung lokasi'));
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => resolve(nearestCity(coords.latitude, coords.longitude)),
+      ({ coords }) => resolve(placeAt(coords.latitude, coords.longitude)),
       (e) => reject(new Error(geoReason(e.code))),
       { timeout: 10_000, maximumAge: 3_600_000 },
     );
   });
 }
 
-/** Warns when the nearest kab/kota is far from the device. */
-export const farNote = (city: City, km: number) =>
-  km > 150 ? `Kota terdekat ${titleCase(city.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '';
-
-/** What a geolocation pick says: the distance warning if far, else the choice; `back` is the city to return to, unless nothing changed. */
-export function locatedChange(prev: Place, city: City, km: number): { note: string; back?: Place } {
-  return { note: farNote(city, km) || `Lokasi Anda: ${titleCase(city.name)}.`, back: prev.id === city.id ? undefined : prev };
+/** What a geolocation pick says; `back` is the place to return to, unless nothing changed. */
+export function locatedChange(prev: Place, place: Place): { note: string; back?: Place } {
+  return {
+    note: place.kind === 'spot' ? 'Di luar Indonesia: jadwal dihitung dari lokasi Anda.' : `Lokasi Anda: ${placeName(place)}.`,
+    back: prev.id === place.id ? undefined : prev,
+  };
 }
 
 type Options = {
@@ -89,9 +88,9 @@ export function initCityDialog({ current, pick }: Options) {
   locateButton?.addEventListener('click', async () => {
     setHint('Mencari lokasi…');
     try {
-      const { city, km } = await locateNearest();
-      const { note, back } = locatedChange(current(), city, km);
-      choose(city, note, back);
+      const place = await locatePlace();
+      const { note, back } = locatedChange(current(), place);
+      choose(place, note, back);
     } catch (e) {
       setHint(`${(e as Error).message}. Ketik nama kota di atas.`, true);
     }

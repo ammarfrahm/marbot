@@ -63,7 +63,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     import { creditFor, SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
     import { saveCity, savedCity, store, storeKey } from '../lib/store';
-    import { initCityDialog, locatedChange, locateNearest } from '../lib/city-dialog';
+    import { initCityDialog, locatedChange, locatePlace } from '../lib/city-dialog';
 
     const sourceSelect = $<HTMLSelectElement>('source');
 
@@ -322,10 +322,10 @@ import PanelBoot from '../components/PanelBoot.astro';
 
     function locate() {
       setStatus('Mencari lokasi…');
-      locateNearest().then(
-        ({ city: c, km }) => {
-          const { note, back } = locatedChange(city, c, km);
-          setCity(c, note, back);
+      locatePlace().then(
+        (place) => {
+          const { note, back } = locatedChange(city, place);
+          setCity(place, note, back);
         },
         (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${placeName(city)}.`, { label: 'Pilih kota', run: cityDialog.open }),
       );
