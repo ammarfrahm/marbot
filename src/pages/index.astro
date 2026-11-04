@@ -55,7 +55,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
   <script>
-    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, placeWhere, type Place } from '../lib/cities';
+    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
     import {
       formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, toInstant, zoneLabel, type DaySchedule, type TimeName,
     } from '../lib/schedule';
@@ -76,12 +76,12 @@ import PanelBoot from '../components/PanelBoot.astro';
     let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
-      cityNote = `Jadwal ${placeWhere(linked)} dari tautan.`;
+      cityNote = linked.kind === 'city' ? `Jadwal ${placeName(linked)} dari tautan.` : 'Jadwal titik ini dari tautan.';
       cityAction = {
         label: 'Simpan sebagai kota saya',
         run: () => {
           saveCity(linked);
-          cityNote = linked.kind === 'city' ? `${placeName(linked)} disimpan sebagai kota Anda.` : 'Lokasi disimpan sebagai kota Anda.'; // stays until the next city change
+          cityNote = `${placeName(linked)} disimpan sebagai kota Anda.`; // stays until the next city change
           cityAction = undefined;
           quietStatus();
         },
@@ -364,7 +364,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
       try {
-        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeWhere(city)}`, url });
+        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeName(city)}`, url });
         else {
           await navigator.clipboard.writeText(url);
           flash('Tautan disalin.');

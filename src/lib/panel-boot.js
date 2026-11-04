@@ -6,6 +6,15 @@
  * script will: a shared ?kota= link first, then the saved bedug:city, else the default.
  */
 
+/** "51,51° LU 0,13° BB"; mirrors coordName in cities.ts. */
+function coordName(lat, lon) {
+  function part(n, pos, neg) {
+    n = +n.toFixed(2) || 0;
+    return Math.abs(n).toFixed(2).replace('.', ',') + '° ' + (n < 0 ? neg : pos);
+  }
+  return part(lat, 'LU', 'LS') + ' ' + part(lon, 'BT', 'BB');
+}
+
 /** The place a `geo:<lat>,<lon>@<tz>` id names, or null; mirrors placeById in cities.ts. */
 function spotOf(id) {
   var m = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)@([\w+\/-]+)$/.exec(id);
@@ -13,7 +22,7 @@ function spotOf(id) {
   try {
     var tz = new Intl.DateTimeFormat('en', { timeZone: m[3] }).resolvedOptions().timeZone;
     // An offset zone ("+05:00") would not read back from storage, so it is no place.
-    return /^[A-Za-z]/.test(tz) ? { id: id, name: 'Lokasi Anda', tz: tz } : null;
+    return /^[A-Za-z]/.test(tz) ? { id: id, name: coordName(+m[1], +m[2]), tz: tz } : null;
   } catch (e) {
     return null;
   }

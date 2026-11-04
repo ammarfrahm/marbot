@@ -60,13 +60,18 @@ describe('resolvePlace', () => {
 describe('spots', () => {
   const london = 'geo:51.51,-0.13@Europe/London';
   const def = { id: '1301', name: 'Kota Jakarta', tz: 'Asia/Jakarta' };
-  it('resolves a geo id to a spot named Lokasi Anda', () => {
-    expect(resolvePlace([london, null], { def, cities: {} })).toEqual({ id: london, name: 'Lokasi Anda', tz: 'Europe/London' });
+  it('resolves a geo id to a spot named by its coordinates', () => {
+    expect(resolvePlace([london, null], { def, cities: {} })).toEqual({ id: london, name: '51,51° LU 0,13° BB', tz: 'Europe/London' });
   });
   it('agrees with placeById on what is valid', () => {
     for (const id of [london, 'geo:91,0@Europe/London', 'geo:0,0@Mars/Base', 'geo:51.51,-0.13@europe/london', 'geo:1e3,0@Asia/Tokyo', 'geo:-90,180@Pacific/Auckland', 'geo:x', 'geo:51.51,-0.13@+05', 'geo:51.51,-0.13@Etc/GMT+5']) {
       const spot = placeById(id);
       expect(resolvePlace([id], { def, cities: {} }).tz, id).toBe(spot ? spot.tz : def.tz);
+    }
+  });
+  it('names a spot as the page does', () => {
+    for (const id of ['geo:51.51,-0.13@Europe/London', 'geo:-6.2,106.82@Asia/Tokyo', 'geo:0,0@Asia/Tokyo', 'geo:-0.001,0.004@Asia/Tokyo', 'geo:-33.87,151.21@Australia/Sydney']) {
+      expect(resolvePlace([id], { def, cities: {} }).name, id).toBe(placeById(id)!.name);
     }
   });
   it('skips a bad geo id for the next one', () => {
@@ -75,7 +80,7 @@ describe('spots', () => {
   it('matches the page for a spot across London\'s change', () => {
     const tz = 'Europe/London';
     for (const now of [Date.parse('2026-03-29T00:30:00Z'), Date.parse('2026-03-29T01:30:00Z'), Date.parse('2026-10-25T00:30:00Z'), Date.parse('2026-10-25T01:30:00Z')]) {
-      const lines = panelLines(now, { id: london, name: 'Lokasi Anda', tz }, cfg);
+      const lines = panelLines(now, { id: london, name: '51,51° LU 0,13° BB', tz }, cfg);
       expect(lines.today).toBe(`${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: tz }).format(now)} · ${placeClock(now, tz)} ${zoneLabel(tz, now)}`);
       const h = toHijri(placeDate(now, tz));
       expect(lines.hijri).toBe(h ? formatHijri(h) : '');
@@ -87,7 +92,7 @@ describe('spots', () => {
       { ...cfg, cities: {}, def, fill: { 'city-name': 'name', today: 'today' } },
       { get: () => london, linked: null, now: Date.parse('2026-07-01T10:00:00Z'), doc: { getElementById: (id: string) => els[id] ?? null } },
     );
-    expect(els['city-name'].textContent).toBe('Lokasi Anda');
+    expect(els['city-name'].textContent).toBe('51,51° LU 0,13° BB');
     expect(els.today.textContent).toMatch(/ · 11:00 GMT\+1$/);
   });
 });

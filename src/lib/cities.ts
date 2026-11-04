@@ -30,15 +30,21 @@ function knownZone(tz: string): string | undefined {
   }
 }
 
+/** "51,51° LU 0,13° BB": rounded coordinates with Indonesian hemisphere letters; panel-boot.js mirrors this. */
+export function coordName(lat: number, lon: number): string {
+  const part = (n: number, pos: string, neg: string) => `${Math.abs(n).toFixed(2).replace('.', ',')}° ${n < 0 ? neg : pos}`;
+  return `${part(lat, 'LU', 'LS')} ${part(lon, 'BT', 'BB')}`;
+}
+
 /**
  * A Spot at these coordinates, rounded to 2 decimals (about 1 km, so GPS jitter keeps one cache key).
  * Undefined when its id would not read back (an offset zone such as "+05:00"): a saved Spot must be readable.
  */
 export function spotAt(lat: number, lon: number, tz: string): Spot | undefined {
-  const [la, lo] = [lat, lon].map((n) => +n.toFixed(2) || 0); // `|| 0` turns -0 into 0, so "-0.00" prints "0"
+  const [la, lo] = [lat, lon].map((n) => +n.toFixed(2) || 0); // `|| 0` drops the sign of -0
   const id = `geo:${la},${lo}@${tz}`;
   if (!/^[A-Za-z]/.test(tz) || !GEO_ID.test(id)) return undefined;
-  return { kind: 'spot', id, name: 'Lokasi Anda', region: tz.split('/').pop()!.replaceAll('_', ' '), lat: la, lon: lo, tz };
+  return { kind: 'spot', id, name: coordName(la, lo), region: tz.split('/').pop()!.replaceAll('_', ' '), lat: la, lon: lo, tz };
 }
 
 /** The Spot a `geo:` id names, or undefined when it is malformed or out of range: a link is untrusted input. */
@@ -55,11 +61,8 @@ export function placeById(id: string | null): Place | undefined {
   return id?.startsWith('geo:') ? parseSpot(id) : cityById(id);
 }
 
-/** What the page calls a place: "Kota Bandung", or "Lokasi Anda". */
+/** What the page calls a place: "Kota Bandung", or a Spot's coordinates. */
 export const placeName = (p: Place) => (p.kind === 'city' ? titleCase(p.name) : p.name);
-
-/** Where a place is, for a sentence about someone else's view of it: "Kota Bandung", "sekitar London". */
-export const placeWhere = (p: Place) => (p.kind === 'city' ? placeName(p) : `sekitar ${p.region}`);
 
 export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
@@ -89,7 +92,7 @@ export function placeAt(lat: number, lon: number, tz = Intl.DateTimeFormat().res
 }
 
 /** Picker label: the province tells "Kab. Bandung" from "Kab. Bandung Barat" at a glance. */
-export const cityLabel = (p: Place) => (p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : `Lokasi Anda (sekitar ${p.region})`);
+export const cityLabel = (p: Place) => (p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : `${p.name} (zona waktu ${p.region})`);
 
 /**
  * What a typed name could mean, best match first. The first tier with any hit wins:

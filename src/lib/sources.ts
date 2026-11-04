@@ -87,8 +87,8 @@ export const SOURCES: Record<SourceId, Source> = { myquran, aladhan };
 export const sourcesFor = (place: Place, preferred: SourceId): Source[] =>
   [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)].filter((s) => s.covers(place));
 
-/** The line under the times: who made them, and for a located place that they are calculated, not Kemenag's. */
+/** The line under the times: who made them, and for a Spot that they are calculated, not Kemenag's. */
 export const creditFor = (place: Place, source: Source) =>
   place.kind === 'city'
     ? `Sumber: ${source.credit}`
-    : `Dihitung dari lokasi Anda (Aladhan, metode ${isKemenag(place) ? 'Kemenag' : 'MWL'}). Bukan jadwal Kemenag.`;
+    : `Dihitung dari titik ini (Aladhan, metode ${isKemenag(place) ? 'sudut Kemenag' : 'MWL'}). Bukan jadwal Kemenag.`;

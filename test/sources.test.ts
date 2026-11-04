@@ -61,7 +61,7 @@ describe('places', () => {
   });
   it('says a located place is calculated, not Kemenag', () => {
     expect(creditFor(jakarta, myquran)).toBe('Sumber: myQuran (Kemenag)');
-    expect(creditFor(london, aladhan)).toBe('Dihitung dari lokasi Anda (Aladhan, metode MWL). Bukan jadwal Kemenag.');
-    expect(creditFor(offJava, aladhan)).toContain('metode Kemenag');
+    expect(creditFor(london, aladhan)).toBe('Dihitung dari titik ini (Aladhan, metode MWL). Bukan jadwal Kemenag.');
+    expect(creditFor(offJava, aladhan)).toContain('metode sudut Kemenag');
   });
 });

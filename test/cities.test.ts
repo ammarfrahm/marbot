@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { locatedChange } from '../src/lib/city-dialog';
-import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, placeAt, placeById, placeName, spotAt, titleCase } from '../src/lib/cities';
+import { CITIES, cityLabel, coordName, findCity, matchCities, matchHint, offerLinked, placeAt, placeById, placeName, spotAt, titleCase } from '../src/lib/cities';
 
 describe('titleCase', () => {
   it('capitalises each word', () => expect(titleCase('KAB. BANDUNG BARAT')).toBe('Kab. Bandung Barat'));
@@ -85,7 +85,7 @@ describe('placeAt', () => {
 });
 
 describe('placeById', () => {
-  const london = { kind: 'spot', id: 'geo:51.51,-0.13@Europe/London', name: 'Lokasi Anda', region: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London' };
+  const london = { kind: 'spot', id: 'geo:51.51,-0.13@Europe/London', name: '51,51° LU 0,13° BB', region: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London' };
   it('finds a kab/kota by id, with its zone', () => {
     expect(placeById('1301')).toMatchObject({ kind: 'city', name: 'KOTA JAKARTA', tz: 'Asia/Jakarta' });
     expect(new Set(CITIES.map((c) => c.tz))).toEqual(new Set(['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura']));
@@ -121,11 +121,19 @@ describe('placeById', () => {
   it('accepts the edges of the range', () => expect(placeById('geo:-90,180@Pacific/Auckland')).toBeDefined());
 });
 
+describe('coordName', () => {
+  it('writes hemisphere letters and a decimal comma', () => {
+    expect(coordName(51.51, -0.13)).toBe('51,51° LU 0,13° BB');
+    expect(coordName(-6.2, 106.82)).toBe('6,20° LS 106,82° BT');
+    expect(coordName(0, 0)).toBe('0,00° LU 0,00° BT');
+  });
+});
+
 describe('place labels', () => {
   it('names a spot and a city', () => {
     const spot = placeById('geo:51.51,-0.13@Europe/London')!;
-    expect(placeName(spot)).toBe('Lokasi Anda');
-    expect(cityLabel(spot)).toBe('Lokasi Anda (sekitar London)');
+    expect(placeName(spot)).toBe('51,51° LU 0,13° BB');
+    expect(cityLabel(spot)).toBe('51,51° LU 0,13° BB (zona waktu London)');
     expect(placeName(CITIES[0])).toBe(titleCase(CITIES[0].name));
   });
   it('offers a linked spot unless it is the saved one', () => {
