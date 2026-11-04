@@ -4,11 +4,6 @@ Prayer times, qibla direction and the Hijri calendar for every kabupaten and kot
 
 **Live:** [marbot.ammar.id](https://marbot.ammar.id)
 
-<p>
-  <img src="public/screenshot-narrow.png" alt="Jadwal tab on a phone: Kota Jakarta, 1 hour 3 minutes until Subuh, and today's times" width="260">
-  <img src="public/screenshot-wide.png" alt="The same tab on a wide screen, with the times beside the countdown" width="540">
-</p>
-
 ## What it does
 
 - **Jadwal:** today's Imsak, Subuh, Terbit, Dzuhur, Ashar, Maghrib and Isya, plus a countdown to the next prayer. The countdown also shows in the tab title. Times are always in the city's own zone (WIB, WITA or WIT).
