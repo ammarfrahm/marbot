@@ -3,7 +3,7 @@ import { CITIES, cityLabel } from '../lib/cities';
 import { STRINGS, type Lang } from '../lib/i18n';
 import LocateButton from './LocateButton.astro';
 
-/** `locate` adds the nearest-city button; Kiblat has its own exact-GPS button, so it leaves this one out. */
+/** `locate` adds the nearest-city button; Qibla has its own exact-GPS button, so it leaves this one out. */
 const { lang = 'id', locate = true, title } = Astro.props as { lang?: Lang; title?: string; locate?: boolean };
 const t = STRINGS[lang].dialog;
 ---

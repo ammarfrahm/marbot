@@ -4,13 +4,13 @@ import PanelBoot from '../components/PanelBoot.astro';
 import { STRINGS, type Lang } from '../lib/i18n';
 
 const { lang = 'id' } = Astro.props as { lang?: Lang };
-const K = STRINGS[lang].kalender;
+const C = STRINGS[lang].calendar;
 
 // Six empty rows hold the grid's height until the script fills it, so nothing below jumps.
 const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
 ---
 
-<Base lang={lang} title={K.title} description={K.description} tab="kalender">
+<Base lang={lang} title={C.title} description={C.description} tab="calendar">
   <Fragment slot="header">
     <h1 id="hijri-today">&nbsp;</h1>
     <p id="greg-today">&nbsp;</p>
@@ -18,13 +18,13 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
   </Fragment>
 
   <section class="upcoming" aria-labelledby="upcoming-title">
-    <h2 id="upcoming-title" class="section-title">{K.upcoming}</h2>
+    <h2 id="upcoming-title" class="section-title">{C.upcoming}</h2>
     <ol id="upcoming" class="card"></ol>
   </section>
 
   <section class="month card" aria-labelledby="month-title">
     <div class="month-head">
-      <button type="button" id="prev" aria-label={K.prev} aria-keyshortcuts="ArrowLeft">
+      <button type="button" id="prev" aria-label={C.prev} aria-keyshortcuts="ArrowLeft">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
       <div class="month-title">
@@ -33,22 +33,22 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
           <p id="month-span">&nbsp;</p>
         </div>
       </div>
-      <button type="button" id="next" aria-label={K.next} aria-keyshortcuts="ArrowRight">
+      <button type="button" id="next" aria-label={C.next} aria-keyshortcuts="ArrowRight">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
       </button>
-      <button type="button" id="this-month" class="pill" hidden>{K.thisMonth}</button>
+      <button type="button" id="this-month" class="pill" hidden>{C.thisMonth}</button>
     </div>
     <table id="grid" aria-labelledby="month-title">
       <thead>
-        <tr>{K.weekdays.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
+        <tr>{C.weekdays.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
       </thead>
       <tbody>{ROWS.map((row) => <tr>{row.map(() => <td />)}</tr>)}</tbody>
     </table>
-    <ul id="month-marked"><li class="none">{K.none}</li></ul>
+    <ul id="month-marked"><li class="none">{C.none}</li></ul>
   </section>
 
-  <p class="note">{K.note}</p>
-  <noscript><p>{K.needJs}</p></noscript>
+  <p class="note">{C.note}</p>
+  <noscript><p>{C.needJs}</p></noscript>
 </Base>
 
 <script>
@@ -62,7 +62,7 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
 
   const lang = pageLang();
   const L = STRINGS[lang];
-  const K = L.kalender;
+  const C = L.calendar;
 
   const city = savedCity() ?? cityById(DEFAULT_CITY_ID)!;
   const DAY = 86_400_000;
@@ -93,9 +93,9 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
     const li = document.createElement('li');
     const what = el('div', 'what', '');
     what.append(el('strong', '', d.name), el('span', 'when', formatHijri(d.hijri, lang)), el('span', 'when', greg(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })));
-    if (note) what.append(el('span', 'when', K.awaitingIsbat));
+    if (note) what.append(el('span', 'when', C.awaitingIsbat));
     li.append(what);
-    if (withCountdown) li.append(el('span', 'left', K.inDays(daysBetween(today, d.date))));
+    if (withCountdown) li.append(el('span', 'left', C.inDays(daysBetween(today, d.date))));
     return li;
   }
 
@@ -147,7 +147,7 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
     for (const r of rows) while (r.children.length < 7) r.append(document.createElement('td'));
     body.replaceChildren(...rows);
     const items = withNote([...marked.values()], false);
-    $('month-marked').replaceChildren(...(items.length ? items : [el('li', 'none', K.none)]));
+    $('month-marked').replaceChildren(...(items.length ? items : [el('li', 'none', C.none)]));
   }
 
   function render() {
@@ -156,7 +156,7 @@ const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
     const month = hijriMonthOf(today);
     $('greg-today').textContent = greg(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     if (!hijri || !month) {
-      $('hijri-today').textContent = K.unavailable;
+      $('hijri-today').textContent = C.unavailable;
       return;
     }
     $('hijri-today').textContent = formatHijri(hijri, lang);

@@ -13,7 +13,7 @@ const id = {
   /** The switcher link: it names the other language. */
   otherLang: 'English',
   menu: 'Menu',
-  tabs: { jadwal: 'Jadwal', kiblat: 'Kiblat', kalender: 'Kalender' },
+  tabs: { times: 'Jadwal', qibla: 'Kiblat', calendar: 'Kalender' },
   prayer: { imsak: 'Imsak', subuh: 'Subuh', terbit: 'Terbit', dzuhur: 'Dzuhur', ashar: 'Ashar', maghrib: 'Maghrib', isya: 'Isya' } as Record<TimeName, string>,
 
   changeCity: 'Ubah kota',
@@ -67,7 +67,7 @@ const id = {
     },
   },
 
-  jadwal: {
+  times: {
     title: 'Jadwal Sholat · Marbot',
     description: 'Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya.',
     needJs: 'Marbot butuh JavaScript untuk menampilkan jadwal.',
@@ -111,7 +111,7 @@ const id = {
     },
   },
 
-  kiblat: {
+  qibla: {
     title: 'Arah Kiblat · Marbot',
     description: 'Arah kiblat dari kota atau lokasi Anda, dengan kompas di HP.',
     needJs: 'Marbot butuh JavaScript untuk menghitung arah kiblat.',
@@ -144,7 +144,7 @@ const id = {
     offlinePick: (name: string) => `Kiblat dihitung dari ${name}. Kota belum disimpan; pilih lagi saat online.`,
   },
 
-  kalender: {
+  calendar: {
     title: 'Kalender Hijriah · Marbot',
     description: 'Tanggal Hijriah hari ini, hari-hari penting berikutnya, dan kalender bulan Hijriah.',
     needJs: 'Marbot butuh JavaScript untuk menampilkan kalender.',
@@ -170,7 +170,7 @@ const en: Strings = {
   decimal: '.',
   otherLang: 'Bahasa Indonesia',
   menu: 'Menu',
-  tabs: { jadwal: 'Times', kiblat: 'Qibla', kalender: 'Calendar' },
+  tabs: { times: 'Times', qibla: 'Qibla', calendar: 'Calendar' },
   prayer: { imsak: 'Imsak', subuh: 'Fajr', terbit: 'Sunrise', dzuhur: 'Dhuhr', ashar: 'Asr', maghrib: 'Maghrib', isya: 'Isha' },
 
   changeCity: 'Change city',
@@ -223,7 +223,7 @@ const en: Strings = {
     },
   },
 
-  jadwal: {
+  times: {
     title: 'Prayer Times · Marbot',
     description: "Today's prayer times and a countdown to the next prayer.",
     needJs: 'Marbot needs JavaScript to show the prayer times.',
@@ -267,7 +267,7 @@ const en: Strings = {
     },
   },
 
-  kiblat: {
+  qibla: {
     title: 'Qibla Direction · Marbot',
     description: 'The qibla direction from your city or location, with a compass on your phone.',
     needJs: 'Marbot needs JavaScript to work out the qibla direction.',
@@ -299,7 +299,7 @@ const en: Strings = {
     offlinePick: (name) => `Qibla calculated from ${name}. The city is not saved yet; pick it again when online.`,
   },
 
-  kalender: {
+  calendar: {
     title: 'Hijri Calendar · Marbot',
     description: "Today's Hijri date, the next important days, and the Hijri month calendar.",
     needJs: 'Marbot needs JavaScript to show the calendar.',

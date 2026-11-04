@@ -28,7 +28,7 @@ export type Said = { turn: number; at: number; aligned: boolean };
 export function announceTurn(prev: Said | null, turn: number, aligned: boolean, now: number, lang: Lang = 'id'): { say: string | null; next: Said | null } {
   const stay = { say: null, next: prev };
   const next = { turn, at: now, aligned };
-  const t = STRINGS[lang].kiblat;
+  const t = STRINGS[lang].qibla;
   if (aligned) return prev?.aligned ? stay : { say: t.announceAligned, next };
   const text = t.announceTurn(turn > 0, Math.round(Math.abs(turn) / 10) * 10);
   if (!prev || prev.aligned) return { say: text, next };

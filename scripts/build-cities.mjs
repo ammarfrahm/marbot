@@ -36,9 +36,9 @@ export function utcOffsetFor(region) {
   return 7;
 }
 
-function placeName(lokasi) {
+function placeName(raw) {
   const title = (s) => s.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
-  return title(lokasi.replace(/^KAB\.\s*/, 'Kabupaten ').replace(/^KOTA\s+/, 'Kota '));
+  return title(raw.replace(/^KAB\.\s*/, 'Kabupaten ').replace(/^KOTA\s+/, 'Kota '));
 }
 
 // Names OpenStreetMap knows under a newer official name.
@@ -48,14 +48,14 @@ const RENAMED = {
   'KAB. TOBA SAMOSIR': 'Kabupaten Toba',
 };
 
-async function geocode(lokasi, region) {
+async function geocode(place, region) {
   const queries = [
-    ...(RENAMED[lokasi] ? [`${RENAMED[lokasi]}, ${placeName(region)}`] : []),
-    `${placeName(lokasi)}, ${placeName(region)}`,
+    ...(RENAMED[place] ? [`${RENAMED[place]}, ${placeName(region)}`] : []),
+    `${placeName(place)}, ${placeName(region)}`,
     // island entries like "PULAU TAMBELAN KAB. BINTAN": search the island itself
-    `${placeName(lokasi.replace(/\s+KAB\..*$/, ''))}, ${placeName(region)}`,
-    placeName(lokasi),
-    `${placeName(lokasi).replace(/^(Kabupaten|Kota) /, '')}, ${placeName(region)}`,
+    `${placeName(place.replace(/\s+KAB\..*$/, ''))}, ${placeName(region)}`,
+    placeName(place),
+    `${placeName(place).replace(/^(Kabupaten|Kota) /, '')}, ${placeName(region)}`,
   ];
   for (const q of queries) {
     const hits = await cached(`osm-${q}`, async () => {
@@ -75,23 +75,23 @@ const { data: list } = await cached('myquran-kota', () =>
 );
 const cities = [];
 const missing = [];
-for (const [i, { id, lokasi }] of list.entries()) {
+for (const [i, { id, lokasi: place }] of list.entries()) {
   // myQuran reports errors with HTTP 200 and status:false; don't cache those.
   // Some listed cities (e.g. KOTA SOFIFI) have no schedule at all, so they're left out.
   const data = await cached(`myquran-${id}`, async () => {
     const json = await getJson(`https://api.myquran.com/v2/sholat/jadwal/${id}/2026-01-01`);
     if (!json.data?.daerah) throw new Error(json.message);
     return json;
-  }).then((json) => json.data, (e) => missing.push(`${id} ${lokasi}: myQuran ${e.message}`));
+  }).then((json) => json.data, (e) => missing.push(`${id} ${place}: myQuran ${e.message}`));
   if (!data?.daerah) continue;
   const region = data.daerah;
-  const geo = await geocode(lokasi, region);
+  const geo = await geocode(place, region);
   if (!geo) {
-    missing.push(`${id} ${lokasi} (${region}): not found on OpenStreetMap`);
+    missing.push(`${id} ${place} (${region}): not found on OpenStreetMap`);
     continue;
   }
-  cities.push({ id, name: lokasi, region, lat: geo.lat, lon: geo.lon, utcOffset: utcOffsetFor(region) });
-  if (i % 25 === 0) console.log(`${i + 1}/${list.length} ${lokasi} -> ${geo.lat},${geo.lon}`);
+  cities.push({ id, name: place, region, lat: geo.lat, lon: geo.lon, utcOffset: utcOffsetFor(region) });
+  if (i % 25 === 0) console.log(`${i + 1}/${list.length} ${place} -> ${geo.lat},${geo.lon}`);
 }
 cities.sort((a, b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
 await writeFile(OUT, JSON.stringify(cities, null, 0).replaceAll('},{', '},\n{') + '\n');

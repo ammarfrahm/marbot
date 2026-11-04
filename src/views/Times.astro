@@ -9,10 +9,10 @@ import PanelBoot from '../components/PanelBoot.astro';
 
 const { lang = 'id' } = Astro.props as { lang?: Lang };
 const L = STRINGS[lang];
-const J = L.jadwal;
+const T = L.times;
 ---
 
-<Base lang={lang} title={J.title} description={J.description} tab="jadwal">
+<Base lang={lang} title={T.title} description={T.description} tab="times">
     <Fragment slot="header">
       <h1><button type="button" class="city" data-open-city aria-haspopup="dialog" aria-describedby="change-city"><span id="city-name">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg></button></h1>
       <span id="change-city" hidden>{L.changeCity}</span>
@@ -20,13 +20,13 @@ const J = L.jadwal;
       <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
-        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden">{J.left}</span></p>
-        <p id="next-at">{J.at('‒‒:‒‒', 'WIB')}</p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden">{T.left}</span></p>
+        <p id="next-at">{T.at('‒‒:‒‒', 'WIB')}</p>
       </section>
       <PanelBoot linked lang={lang} fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
     </Fragment>
 
-    <h2 id="list-title" class="section-title">{J.listToday}</h2>
+    <h2 id="list-title" class="section-title">{T.listToday}</h2>
     <ol id="times" class="card" aria-labelledby="list-title">
       {
         TIMES.map((time) => (
@@ -42,20 +42,20 @@ const J = L.jadwal;
 
     <div id="foot">
       <p id="source-note">&nbsp;</p>
-      <button type="button" id="share">{J.share}</button>
+      <button type="button" id="share">{T.share}</button>
     </div>
 
-    <CityDialog lang={lang} title={J.dialogTitle}>
+    <CityDialog lang={lang} title={T.dialogTitle}>
       <label>
-        {J.source}
+        {T.source}
         <select id="source" aria-describedby="source-hint">
           {Object.values(SOURCES).map((s) => <option value={s.id}>{L.sources[s.id]}</option>)}
         </select>
       </label>
-      <p id="source-hint" hidden>{J.onlyAladhan}</p>
+      <p id="source-hint" hidden>{T.onlyAladhan}</p>
     </CityDialog>
 
-    <noscript><p>{J.needJs}</p></noscript>
+    <noscript><p>{T.needJs}</p></noscript>
 
   <script>
     import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
@@ -71,7 +71,7 @@ const J = L.jadwal;
 
     const lang = pageLang();
     const L = STRINGS[lang];
-    const J = L.jadwal;
+    const T = L.times;
     const sourceSelect = $<HTMLSelectElement>('source');
 
     // A shared link (?kota=<id>) is shown for this view and never stored unasked.
@@ -83,12 +83,12 @@ const J = L.jadwal;
     let cityNote = ''; // e.g. the note after locating or opening a link; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
-      cityNote = linked.kind === 'city' ? J.linkedCity(placeName(linked, lang)) : J.linkedSpot;
+      cityNote = linked.kind === 'city' ? T.linkedCity(placeName(linked, lang)) : T.linkedSpot;
       cityAction = {
-        label: J.saveCity,
+        label: T.saveCity,
         run: () => {
           saveCity(linked);
-          cityNote = J.citySaved(placeName(linked, lang)); // stays until the next city change
+          cityNote = T.citySaved(placeName(linked, lang)); // stays until the next city change
           cityAction = undefined;
           quietStatus();
         },
@@ -125,10 +125,10 @@ const J = L.jadwal;
 
     /** Why a source failed, in words a reader can act on. */
     function describeError(e: unknown): string {
-      if (e instanceof DOMException && e.name === 'TimeoutError') return J.errors.timeout;
-      if (e instanceof TypeError) return navigator.onLine ? J.errors.unreachable : J.errors.offline;
+      if (e instanceof DOMException && e.name === 'TimeoutError') return T.errors.timeout;
+      if (e instanceof TypeError) return navigator.onLine ? T.errors.unreachable : T.errors.offline;
       const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
-      return status ? J.errors.server(status) : J.errors.invalid;
+      return status ? T.errors.server(status) : T.errors.invalid;
     }
 
     // AbortSignal.timeout is missing on iOS 15, so time out by hand; describeError keys on the name.
@@ -198,9 +198,9 @@ const J = L.jadwal;
         const used = merged.today.source;
         setText('source-note', creditFor(city, used, lang));
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
-        retry = noTomorrow ? (navigator.onLine ? J.tomorrowRetry : J.tomorrowOffline) : '';
+        retry = noTomorrow ? (navigator.onLine ? T.tomorrowRetry : T.tomorrowOffline) : '';
         const first = sourcesFor(city, preferred)[0];
-        if (used.id !== first.id) setStatus(`${J.sourceDown(first.name, used.name)}${retry && ` ${retry}`}`);
+        if (used.id !== first.id) setStatus(`${T.sourceDown(first.name, used.name)}${retry && ` ${retry}`}`);
         else quietStatus();
         // Offline waits for the online event; online retries like a failed load.
         if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -220,11 +220,11 @@ const J = L.jadwal;
         const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
         if (!navigator.onLine && back && back.id !== city.id) {
           const heldNow = left;
-          setStatus(J.notSaved(placeName(city, lang)), {
+          setStatus(T.notSaved(placeName(city, lang)), {
             label: L.backTo(placeName(back, lang)),
             run: () => setCity(back, '', undefined, heldNow, !!saved), // the default fallback is shown, not saved
           });
-        } else setStatus(J.failed(capitalise(describeError(merged.error))), { label: J.retry, run: refresh });
+        } else setStatus(T.failed(capitalise(describeError(merged.error))), { label: T.retry, run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
       }
       tick();
@@ -256,7 +256,7 @@ const J = L.jadwal;
       // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
       const listDate = shown?.date ?? today;
       const listed = days.find((d) => d.date === listDate);
-      setText('list-title', listDate === today ? J.listToday : J.listTomorrow);
+      setText('list-title', listDate === today ? T.listToday : T.listTomorrow);
       for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
         const t = li.dataset.time as TimeName;
         const cell = li.querySelector('time')!;
@@ -276,23 +276,23 @@ const J = L.jadwal;
 
       if (arrived) {
         setText('next-name', L.prayer[arrived.name]);
-        setCountdown(J.arrived);
-        setText('next-at', J.since(arrived.time, zone));
-        document.title = J.arrivedTitle(L.prayer[arrived.name]);
+        setCountdown(T.arrived);
+        setText('next-at', T.since(arrived.time, zone));
+        document.title = T.arrivedTitle(L.prayer[arrived.name]);
         return;
       }
       if (!next) {
         // Partial after Isya: tomorrow's month is the one missing, so the next prayer is certainly Subuh.
         setText('next-name', !loadFailed && partial && last?.name === 'isya' ? L.prayer.subuh : '…');
         setCountdown('‒‒:‒‒:‒‒', false, true);
-        setText('next-at', loadFailed ? J.notLoaded : partial ? J.tomorrowMissing : J.at('‒‒:‒‒', zone));
-        document.title = J.title;
+        setText('next-at', loadFailed ? T.notLoaded : partial ? T.tomorrowMissing : T.at('‒‒:‒‒', zone));
+        document.title = T.title;
         return;
       }
       const left = formatCountdown(next.at - now);
       setText('next-name', L.prayer[next.name]);
       setCountdown(left, true);
-      setText('next-at', (next.date === today ? J.at : J.tomorrowAt)(next.time, zone));
+      setText('next-at', (next.date === today ? T.at : T.tomorrowAt)(next.time, zone));
       document.title = `${left} · ${L.prayer[next.name]} · Marbot`;
     }
 
@@ -301,7 +301,7 @@ const J = L.jadwal;
       // A missing tomorrow joins whatever note or prompt is showing, so neither hides the other.
       const join = (t: string) => (retry ? `${t} ${retry}` : t);
       if (cityNote) setStatus(join(cityNote), cityAction);
-      else if (!chosen) setStatus(join(J.scheduleFor(placeName(city, lang))), { label: J.useMyLocation, run: locate });
+      else if (!chosen) setStatus(join(T.scheduleFor(placeName(city, lang))), { label: T.useMyLocation, run: locate });
       else setStatus(retry);
     }
 
@@ -335,7 +335,7 @@ const J = L.jadwal;
           const { note, back } = locatedChange(city, place, lang);
           setCity(place, note, back);
         },
-        (e: Error) => setStatus(J.keptCity(e.message, placeName(city, lang)), { label: J.pickCity, run: cityDialog.open }),
+        (e: Error) => setStatus(T.keptCity(e.message, placeName(city, lang)), { label: T.pickCity, run: cityDialog.open }),
       );
     }
 
@@ -373,13 +373,13 @@ const J = L.jadwal;
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
       try {
-        if (navigator.share) await navigator.share({ title: J.shareTitle(placeName(city, lang)), url });
+        if (navigator.share) await navigator.share({ title: T.shareTitle(placeName(city, lang)), url });
         else {
           await navigator.clipboard.writeText(url);
-          flash(J.linkCopied);
+          flash(T.linkCopied);
         }
       } catch (e) {
-        if ((e as Error).name !== 'AbortError') flash(J.linkFailed);
+        if ((e as Error).name !== 'AbortError') flash(T.linkFailed);
       }
     });
 

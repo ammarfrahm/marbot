@@ -118,8 +118,8 @@ export function matchCities(text: string): City[] {
   ];
   for (const tier of tiers) {
     const hits = CITIES.filter(tier);
-    const kota = hits.filter((c) => c.name.startsWith('KOTA '));
-    if (hits.length) return kota.length === 1 && tier === tiers[2] ? kota : hits;
+    const cityHits = hits.filter((c) => c.name.startsWith('KOTA '));
+    if (hits.length) return cityHits.length === 1 && tier === tiers[2] ? cityHits : hits;
   }
   return [];
 }

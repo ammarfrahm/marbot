@@ -42,10 +42,10 @@ export const myquran: Source = {
   covers: (place) => place.kind === 'city',
   url: (place, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${place.id}/${year}/${pad(month)}`,
   parse(json) {
-    const jadwal = (json as { data?: { jadwal?: Record<string, unknown>[] } })?.data?.jadwal;
-    if (!Array.isArray(jadwal)) throw new Error('myQuran: no jadwal');
+    const rows = (json as { data?: { jadwal?: Record<string, unknown>[] } })?.data?.jadwal;
+    if (!Array.isArray(rows)) throw new Error('myQuran: no jadwal');
     const keys = Object.fromEntries(TIMES.map((t) => [t, t])) as Record<TimeName, string>;
-    return checked(jadwal.map((d) => ({ date: String(d.date), ...pick(d, keys) })));
+    return checked(rows.map((d) => ({ date: String(d.date), ...pick(d, keys) })));
   },
 };
 
