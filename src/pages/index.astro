@@ -341,11 +341,21 @@ import PanelBoot from '../components/PanelBoot.astro';
     addEventListener('online', () => (loadFailed || partial) && refresh());
     $('status-action').addEventListener('click', () => statusAction?.());
     /** A short message that gives the status back, with its action, unless something newer replaced it. */
+    let flashed: { msg: string; prev: string; action?: { label: string; run: () => void } } | null = null;
+    let flashTimer = 0;
     function flash(msg: string) {
-      const prev = $('status-text').textContent ?? '';
-      const prevAction = $('status-action').hidden ? undefined : { label: $('status-action').textContent ?? '', run: statusAction! };
+      const showing = $('status-text').textContent ?? '';
+      // A flash over a flash gives back the status from before the first one.
+      const keep = flashed && showing === flashed.msg ? flashed
+        : { prev: showing, action: $('status-action').hidden ? undefined : { label: $('status-action').textContent ?? '', run: statusAction! } };
+      flashed = { ...keep, msg };
       setStatus(msg);
-      setTimeout(() => $('status-text').textContent === msg && setStatus(prev, prevAction), 4000);
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => {
+        const f = flashed!;
+        flashed = null;
+        if ($('status-text').textContent === f.msg) setStatus(f.prev, f.action);
+      }, 4000);
     }
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${city.id}`;
