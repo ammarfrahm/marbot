@@ -82,7 +82,12 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
           else localStorage.removeItem('bedug:lang');
         } catch {}
       });
-      if (import.meta.env.PROD && 'serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+      if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+        addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+        // The cache serves the old version first; when a deploy's worker takes over, reload once to show it.
+        // A first visit has no controller yet, so it never reloads.
+        if (navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+      }
     </script>
 
     <style is:global>
