@@ -100,11 +100,19 @@ describe('spots', () => {
 describe('linkedId', () => {
   it('decodes the id as the page does, so a shared geo link names its spot at first paint', () => {
     const id = 'geo:51.51,-0.13@Europe/London';
-    const search = `?kota=${encodeURIComponent(id)}`;
+    const search = `?city=${encodeURIComponent(id)}`;
     expect(linkedId(search)).toBe(id);
     expect(resolvePlace([linkedId(search)], { def: jakarta, cities: {} }).tz).toBe('Europe/London');
-    expect(linkedId('?kota=1301&x=1')).toBe('1301');
+    expect(linkedId('?city=1301&x=1')).toBe('1301');
+    expect(linkedId('?city=1&kota=2')).toBe('1');
     expect(linkedId('')).toBeNull();
+  });
+});
+
+describe('an old ?kota= link', () => {
+  it('still selects the city', () => {
+    expect(linkedId('?kota=1301')).toBe('1301');
+    expect(resolvePlace([linkedId('?kota=2')], { def: { id: '1301', name: 'Kota Jakarta', tz: 'Asia/Jakarta' }, cities: { '2': ['Kota Makassar', 'Asia/Makassar'] } }).name).toBe('Kota Makassar');
   });
 });
 

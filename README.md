@@ -9,7 +9,7 @@ Prayer times, qibla direction and the Hijri calendar for every kabupaten and kot
 - **Jadwal:** today's Imsak, Subuh, Terbit, Dzuhur, Ashar, Maghrib and Isya, plus a countdown to the next prayer. The countdown also shows in the tab title. Times are always in the city's own zone (WIB, WITA or WIT).
 - **Kiblat:** the great-circle bearing to the Ka'bah from your city or from your current location. On phones with a compass, the arrow turns as you turn.
 - **Kalender:** today's Hijri date, the next important days, and a month view.
-- **City:** found by location on the first visit, or picked from 517 kab/kota. A `?kota=<id>` link opens another city without changing your saved one.
+- **City:** found by location on the first visit, or picked from 517 kab/kota. A `?city=<id>` link opens another city without changing your saved one.
 - **Abroad:** when no kab/kota is within 150 km, the app uses your coordinates and your device's time zone, daylight saving included. It names the place by its coordinates and labels the times as calculated, not Kemenag.
 - **Offline:** the app installs to the home screen, and the current month's schedule is cached on the device.
 

@@ -74,8 +74,9 @@ const T = L.times;
     const T = L.times;
     const sourceSelect = $<HTMLSelectElement>('source');
 
-    // A shared link (?kota=<id>) is shown for this view and never stored unasked.
-    const linked = placeById(new URLSearchParams(location.search).get('kota'));
+    // A shared link (?city=<id>, or the older ?kota=) is shown for this view and never stored unasked.
+    const query = new URLSearchParams(location.search);
+    const linked = placeById(query.get('city') ?? query.get('kota'));
     const stored = savedCity();
     let city: Place = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
     let toSave: string | null = null; // a picked city is stored only once its schedule has loaded
@@ -322,7 +323,7 @@ const T = L.times;
       $('city-name').textContent = placeName(c, lang);
       syncSource();
       toSave = persist ? c.id : null;
-      history.replaceState(null, '', persist ? `?kota=${encodeURIComponent(c.id)}` : location.pathname);
+      history.replaceState(null, '', persist ? `?city=${encodeURIComponent(c.id)}` : location.pathname);
       quietStatus();
       refresh(); // sets loadedFor, so the tick below paints the loading state
       tick();
@@ -371,7 +372,7 @@ const T = L.times;
       }, 4000);
     }
     $('share').addEventListener('click', async () => {
-      const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
+      const url = `${location.origin}${location.pathname}?city=${encodeURIComponent(city.id)}`;
       try {
         if (navigator.share) await navigator.share({ title: T.shareTitle(placeName(city, lang)), url });
         else {

@@ -3,7 +3,7 @@
  * without a reflow (at 200% text size these wrap to several lines, a one-line placeholder cannot hold them).
  * PanelBoot.astro inlines this file as a classic script, so it has no imports and no exports; the tests load it by source.
  * It mirrors schedule.ts (placeDate, placeClock, zoneLabel) and hijri.ts (toHijri, formatHijri), and reads the same city the page's
- * script will: a shared ?kota= link first, then the saved bedug:city, else the default.
+ * script will: a shared ?city= link (or the older ?kota=) first, then the saved bedug:city, else the default.
  * `cfg.t` ({ locale, zoneLocale, decimal, hemisphere, era, fromPrefix }) is the page language's slice of the dictionary in i18n.ts;
  * without it the text is Indonesian.
  */
@@ -71,7 +71,8 @@ function panelLines(now, place, cfg) {
 
 /** The shared link's place id, decoded as the page's script reads it; null when absent. */
 function linkedId(search) {
-  return new URLSearchParams(search).get('kota');
+  var q = new URLSearchParams(search);
+  return q.get('city') || q.get('kota'); // ?kota= is what links used before the English names
 }
 
 /** Writes `cfg.fill` ({ element id: line name }) into the page. */

@@ -75,7 +75,7 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
       }
     </nav>
     <script>
-      // The link keeps the shared city (?kota=) and remembers the choice, so the next visit to the Indonesian address opens it.
+      // The link keeps the shared city (?city=) and remembers the choice, so the next visit to the Indonesian address opens it.
       const link = document.querySelector<HTMLAnchorElement>('a.lang');
       link?.addEventListener('click', () => {
         link.search = location.search;
