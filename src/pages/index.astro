@@ -215,7 +215,7 @@ import PanelBoot from '../components/PanelBoot.astro';
           const heldNow = left;
           setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
             label: `Kembali ke ${titleCase(back.name)}`,
-            run: () => setCity(back, '', undefined, heldNow),
+            run: () => setCity(back, '', undefined, heldNow, !!saved), // the default fallback is shown, not saved
           });
         } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -302,19 +302,19 @@ import PanelBoot from '../components/PanelBoot.astro';
     /** The days held for the city we just left: a way back shows them at once; any other city shows loading, never these. */
     let left: { cityId: string; days: DaySchedule[] } = { cityId: '', days: [] };
 
-    function setCity(c: City, note = '', back?: City, held?: typeof left) {
+    function setCity(c: City, note = '', back?: City, held?: typeof left, persist = true) {
       left = { cityId: city.id, days };
       days = daysWhileLoading(held, c.id);
       loadFailed = false;
       partial = false;
       city = c;
-      chosen = true;
+      chosen = persist; // the unsaved default fallback keeps the first-visit prompt
       cityNote = note;
       const heldNow = left;
       retry = '';
       cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back, '', undefined, heldNow) };
       $('city-name').textContent = titleCase(c.name);
-      toSave = c.id;
+      toSave = persist ? c.id : null;
       history.replaceState(null, '', `?kota=${c.id}`);
       quietStatus();
       refresh(); // sets loadedFor, so the tick below paints the loading state
