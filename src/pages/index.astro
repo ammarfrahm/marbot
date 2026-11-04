@@ -46,10 +46,11 @@ import PanelBoot from '../components/PanelBoot.astro';
     <CityDialog title="Kota & sumber jadwal">
       <label>
         Sumber
-        <select id="source">
+        <select id="source" aria-describedby="source-hint">
           {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
         </select>
       </label>
+      <p id="source-hint" hidden>Di luar Indonesia hanya Aladhan.</p>
     </CityDialog>
 
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
@@ -336,6 +337,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     function syncSource() {
       sourceSelect.value = sourcesFor(city, preferred)[0].id;
       sourceSelect.disabled = city.kind === 'spot';
+      $('source-hint').hidden = city.kind !== 'spot';
     }
     const cityDialog = initCityDialog({ current: () => city, pick: setCity });
     sourceSelect.addEventListener('change', () => {
