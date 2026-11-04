@@ -11,7 +11,7 @@ const precache = {
     'astro:build:done': async ({ dir }) => {
       const root = fileURLToPath(dir);
       const files = (await readdir(root, { recursive: true, withFileTypes: true }))
-        .filter((f) => f.isFile() && f.name !== 'sw.js')
+        .filter((f) => f.isFile() && f.name !== 'sw.js' && f.name !== '_redirects') // _redirects is for Cloudflare and is not served, so addAll would fail on it
         .map((f) => relative(root, join(f.parentPath, f.name)).split(sep).join('/'))
         .sort();
       const hash = createHash('sha256');

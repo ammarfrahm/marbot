@@ -30,7 +30,7 @@ self.addEventListener('fetch', (event) => {
       .then((hit) => hit ?? fetch(request))
       .catch(() => {
         if (!navigate) return Response.error();
-        const path = new URL(request.url).pathname.replace(/\/?$/, '/'); // /kiblat is /kiblat/
+        const path = new URL(request.url).pathname.replace(/\/?$/, '/'); // /qibla is /qibla/
         return caches.match(path).then((page) => page ?? caches.match(path.startsWith('/en/') ? '/en/' : '/')); // an unknown English path opens English
       }),
   );
