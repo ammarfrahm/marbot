@@ -108,9 +108,9 @@ import PanelBoot from '../components/PanelBoot.astro';
       const button = $<HTMLButtonElement>('status-action');
       const hadFocus = document.activeElement === button;
       setText('status-text', text);
-      $('status-line').hidden = !text;
-      button.hidden = !action;
-      button.textContent = action?.label ?? '';
+      if ($('status-line').hidden === !!text) $('status-line').hidden = !text;
+      if (button.hidden === !!action) button.hidden = !action;
+      if (button.textContent !== (action?.label ?? '')) button.textContent = action?.label ?? '';
       statusAction = action?.run ?? null;
       // A focused button that disappears would drop focus to the page; keep it nearby.
       if (hadFocus && !action) $(text ? 'status-text' : 'city-name').focus();
