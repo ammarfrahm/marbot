@@ -6,7 +6,7 @@ import { formatHijri, HIJRI_MONTHS, toHijri } from '../src/lib/hijri';
 import { placeClock, placeDate, zoneLabel, ZONE_LABEL } from '../src/lib/schedule';
 
 // The page inlines this file as a classic script, so the test runs that same source.
-const { panelLines, resolvePlace, panelBoot } = new Function(`${source}; return { panelLines, resolvePlace, panelBoot };`)();
+const { panelLines, resolvePlace, panelBoot, linkedId } = new Function(`${source}; return { panelLines, resolvePlace, panelBoot, linkedId };`)();
 
 const cfg = { starts: table.starts, first: table.first, months: HIJRI_MONTHS, zones: ZONE_LABEL };
 const jakarta = { id: '1301', name: 'Kota Jakarta', tz: 'Asia/Jakarta' };
@@ -89,6 +89,17 @@ describe('spots', () => {
     );
     expect(els['city-name'].textContent).toBe('Lokasi Anda');
     expect(els.today.textContent).toMatch(/ · 11:00 GMT\+1$/);
+  });
+});
+
+describe('linkedId', () => {
+  it('decodes the id as the page does, so a shared geo link names its spot at first paint', () => {
+    const id = 'geo:51.51,-0.13@Europe/London';
+    const search = `?kota=${encodeURIComponent(id)}`;
+    expect(linkedId(search)).toBe(id);
+    expect(resolvePlace([linkedId(search)], { def: jakarta, cities: {} }).tz).toBe('Europe/London');
+    expect(linkedId('?kota=1301&x=1')).toBe('1301');
+    expect(linkedId('')).toBeNull();
   });
 });
 

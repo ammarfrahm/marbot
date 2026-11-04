@@ -52,11 +52,16 @@ function panelLines(now, place, cfg) {
   };
 }
 
+/** The shared link's place id, decoded as the page's script reads it; null when absent. */
+function linkedId(search) {
+  return new URLSearchParams(search).get('kota');
+}
+
 /** Writes `cfg.fill` ({ element id: line name }) into the page. */
 function panelBoot(cfg, env) {
   env = env || {
     get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    linked: cfg.linked ? (/[?&]kota=([^&#]*)/.exec(location.search) || [])[1] : null,
+    linked: cfg.linked ? linkedId(location.search) : null,
     now: Date.now(),
     doc: document,
   };
