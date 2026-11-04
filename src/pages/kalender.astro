@@ -225,7 +225,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   #this-month[hidden] { display: none; }
   #this-month { grid-column: 1 / -1; justify-self: center; max-width: 100%; margin-top: 0.5rem; text-wrap: balance; background: var(--accent-soft); color: var(--accent); }
 
-  /* Large text in a narrow card: the title takes the full row, the arrows sit under it with the pill between. em here is the card's own font size, so it follows the text scale. */
+  /* Large text in a narrow card: the title takes the full row, the arrows sit under it and the pill gets its own row below. em here is the card's own font size, so it follows the text scale. */
   @container (max-width: 16em) {
     .month-head .month-title { grid-column: 1 / -1; grid-row: 1; }
     #prev { grid-column: 1; grid-row: 2; }
