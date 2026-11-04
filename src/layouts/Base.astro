@@ -7,8 +7,8 @@ const { title, description, tab, lang = 'id' } = Astro.props;
 const t = STRINGS[lang];
 const prefix = lang === 'id' ? '' : `/${lang}`;
 
-// A visitor who chose English once lands on the English twin before first paint; English pages never redirect.
-const REDIRECT = "try{if(localStorage.getItem('bedug:lang')==='en')location.replace('/en'+location.pathname+location.search+location.hash)}catch(e){}";
+// A visitor who chose English once lands on the English twin; the page stays hidden so Indonesian never flashes. English pages never redirect.
+const REDIRECT = "try{if(localStorage.getItem('bedug:lang')==='en'){document.documentElement.style.visibility='hidden';location.replace('/en'+location.pathname+location.search+location.hash)}}catch(e){}";
 
 // The same page in the other language, and every language's URL for the alternate links.
 const other: Lang = lang === 'id' ? 'en' : 'id';
