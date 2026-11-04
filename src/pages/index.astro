@@ -180,13 +180,12 @@ import PanelBoot from '../components/PanelBoot.astro';
       // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
       const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
       loadedFor = `${city.id}:${wanted[1]}`;
-      loadFailed = false;
-      partial = false;
       const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
       const merged = mergeMonths(wanted, wanted[1], months, await Promise.allSettled(months.map((ym) => loadMonth(city, ym))));
       if (token !== loadToken) return; // a newer city/source choice won
       if (merged.ok) {
         days = merged.days;
+        loadFailed = false;
         partial = merged.partial;
         if (toSave === city.id) saveCity(city);
         toSave = null;
@@ -206,6 +205,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         days = [];
         setText('source-note', '\u00a0');
         loadFailed = true;
+        partial = false;
         // Way back offline: the saved city, else the default one if its month is on the device.
         const saved = savedCity();
         const fallback = cityById(DEFAULT_CITY_ID)!;
@@ -305,6 +305,8 @@ import PanelBoot from '../components/PanelBoot.astro';
     function setCity(c: City, note = '', back?: City, held?: typeof left) {
       left = { cityId: city.id, days };
       days = daysWhileLoading(held, c.id);
+      loadFailed = false;
+      partial = false;
       city = c;
       chosen = true;
       cityNote = note;
