@@ -315,7 +315,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back, '', undefined, heldNow) };
       $('city-name').textContent = titleCase(c.name);
       toSave = persist ? c.id : null;
-      history.replaceState(null, '', `?kota=${c.id}`);
+      history.replaceState(null, '', persist ? `?kota=${c.id}` : location.pathname);
       quietStatus();
       refresh(); // sets loadedFor, so the tick below paints the loading state
       tick();
