@@ -11,7 +11,9 @@ function spotOf(id) {
   var m = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)@([\w+\/-]+)$/.exec(id);
   if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return null;
   try {
-    return { id: id, name: 'Lokasi Anda', tz: new Intl.DateTimeFormat('en', { timeZone: m[3] }).resolvedOptions().timeZone };
+    var tz = new Intl.DateTimeFormat('en', { timeZone: m[3] }).resolvedOptions().timeZone;
+    // An offset zone ("+05:00") would not read back from storage, so it is no place.
+    return /^[A-Za-z]/.test(tz) ? { id: id, name: 'Lokasi Anda', tz: tz } : null;
   } catch (e) {
     return null;
   }

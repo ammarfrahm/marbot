@@ -73,14 +73,14 @@ describe('locatedChange', () => {
 describe('placeAt', () => {
   it('picks the kab/kota within 150 km', () => {
     expect(placeAt(-6.2, 106.8166, 'Asia/Jakarta')).toMatchObject({ kind: 'city', id: '1301' });
-    expect(placeAt(-6.2, 106.8166, 'Europe/London').kind).toBe('city'); // inside Indonesia the device zone is ignored
+    expect(placeAt(-6.2, 106.8166, 'Europe/London')?.kind).toBe('city'); // inside Indonesia the device zone is ignored
   });
   it('makes a spot in the device zone farther out', () => {
     expect(placeAt(51.5074, -0.1278, 'Europe/London')).toMatchObject({ kind: 'spot', id: 'geo:51.51,-0.13@Europe/London' });
-    expect(placeAt(35.6762, 139.6503, 'Asia/Tokyo').id).toBe('geo:35.68,139.65@Asia/Tokyo');
+    expect(placeAt(35.6762, 139.6503, 'Asia/Tokyo')?.id).toBe('geo:35.68,139.65@Asia/Tokyo');
   });
   it('makes a spot for a fix at sea beyond the nearest kab/kota', () => {
-    expect(placeAt(-20, 105, 'Asia/Jakarta').kind).toBe('spot');
+    expect(placeAt(-20, 105, 'Asia/Jakarta')?.kind).toBe('spot');
   });
 });
 
@@ -96,10 +96,10 @@ describe('placeById', () => {
     expect(placeById('geo:-34.6,-58.38@America/Argentina/Buenos_Aires')?.region).toBe('Buenos Aires');
   });
   it('round-trips the id of a spot made from raw coordinates', () => {
-    const spot = spotAt(51.5074, -0.1278, 'Europe/London');
+    const spot = spotAt(51.5074, -0.1278, 'Europe/London')!;
     expect(spot.id).toBe('geo:51.51,-0.13@Europe/London');
     expect(placeById(spot.id)).toEqual(spot);
-    expect(spotAt(-0.001, 0.004, 'Asia/Tokyo').id).toBe('geo:0,0@Asia/Tokyo');
+    expect(spotAt(-0.001, 0.004, 'Asia/Tokyo')?.id).toBe('geo:0,0@Asia/Tokyo');
   });
   it('rounds a longer link to the same spot', () => expect(placeById('geo:51.5074,-0.1278@Europe/London')?.id).toBe(london.id));
   it('reads the zone in its proper spelling', () => expect(placeById('geo:51.51,-0.13@europe/london')?.tz).toBe('Europe/London'));
@@ -110,6 +110,13 @@ describe('placeById', () => {
       'geo:51.51,-0.13@Europe/London<script>', 'geo:1e3,0@Asia/Tokyo', 'geo:', '9999', '', 'constructor',
     ]) expect(placeById(id), id).toBeUndefined();
     expect(placeById(null)).toBeUndefined();
+  });
+  it('refuses an offset zone, whose id would not read back', () => {
+    expect(placeById('geo:51.51,-0.13@+05')).toBeUndefined();
+    expect(placeById('geo:51.51,-0.13@+05:00')).toBeUndefined();
+    expect(spotAt(51.51, -0.13, '+05:00')).toBeUndefined();
+    expect(placeAt(51.51, -0.13, '+05:00')).toBeUndefined();
+    expect(placeById('geo:51.51,-0.13@Etc/GMT+5')?.id).toBe('geo:51.51,-0.13@Etc/GMT+5');
   });
   it('accepts the edges of the range', () => expect(placeById('geo:-90,180@Pacific/Auckland')).toBeDefined());
 });

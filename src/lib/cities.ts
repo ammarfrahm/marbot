@@ -30,10 +30,15 @@ function knownZone(tz: string): string | undefined {
   }
 }
 
-/** A Spot at these coordinates, rounded to 2 decimals (about 1 km, so GPS jitter keeps one cache key). */
-export function spotAt(lat: number, lon: number, tz: string): Spot {
-  const [la, lo] = [lat, lon].map((n) => +n.toFixed(2)); // `+` turns "-0.00" into 0
-  return { kind: 'spot', id: `geo:${la},${lo}@${tz}`, name: 'Lokasi Anda', region: tz.split('/').pop()!.replaceAll('_', ' '), lat: la, lon: lo, tz };
+/**
+ * A Spot at these coordinates, rounded to 2 decimals (about 1 km, so GPS jitter keeps one cache key).
+ * Undefined when its id would not read back (an offset zone such as "+05:00"): a saved Spot must be readable.
+ */
+export function spotAt(lat: number, lon: number, tz: string): Spot | undefined {
+  const [la, lo] = [lat, lon].map((n) => +n.toFixed(2) || 0); // `|| 0` turns -0 into 0, so "-0.00" prints "0"
+  const id = `geo:${la},${lo}@${tz}`;
+  if (!/^[A-Za-z]/.test(tz) || !GEO_ID.test(id)) return undefined;
+  return { kind: 'spot', id, name: 'Lokasi Anda', region: tz.split('/').pop()!.replaceAll('_', ' '), lat: la, lon: lo, tz };
 }
 
 /** The Spot a `geo:` id names, or undefined when it is malformed or out of range: a link is untrusted input. */
@@ -78,7 +83,7 @@ export function nearestCity(lat: number, lon: number): { city: City; km: number 
 const NEAR_KM = 150;
 
 /** Where coordinates are: the nearest kab/kota if one is within 150 km, else a Spot in the device's time zone. */
-export function placeAt(lat: number, lon: number, tz = Intl.DateTimeFormat().resolvedOptions().timeZone): Place {
+export function placeAt(lat: number, lon: number, tz = Intl.DateTimeFormat().resolvedOptions().timeZone): Place | undefined {
   const { city, km } = nearestCity(lat, lon);
   return km <= NEAR_KM ? city : spotAt(lat, lon, tz);
 }

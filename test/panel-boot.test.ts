@@ -64,7 +64,7 @@ describe('spots', () => {
     expect(resolvePlace([london, null], { def, cities: {} })).toEqual({ id: london, name: 'Lokasi Anda', tz: 'Europe/London' });
   });
   it('agrees with placeById on what is valid', () => {
-    for (const id of [london, 'geo:91,0@Europe/London', 'geo:0,0@Mars/Base', 'geo:51.51,-0.13@europe/london', 'geo:1e3,0@Asia/Tokyo', 'geo:-90,180@Pacific/Auckland', 'geo:x']) {
+    for (const id of [london, 'geo:91,0@Europe/London', 'geo:0,0@Mars/Base', 'geo:51.51,-0.13@europe/london', 'geo:1e3,0@Asia/Tokyo', 'geo:-90,180@Pacific/Auckland', 'geo:x', 'geo:51.51,-0.13@+05', 'geo:51.51,-0.13@Etc/GMT+5']) {
       const spot = placeById(id);
       expect(resolvePlace([id], { def, cities: {} }).tz, id).toBe(spot ? spot.tz : def.tz);
     }

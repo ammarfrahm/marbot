@@ -6,7 +6,11 @@ export function locatePlace(): Promise<Place> {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) return reject(new Error('Browser ini tidak mendukung lokasi'));
     navigator.geolocation.getCurrentPosition(
-      ({ coords }) => resolve(placeAt(coords.latitude, coords.longitude)),
+      ({ coords }) => {
+        const place = placeAt(coords.latitude, coords.longitude);
+        if (place) resolve(place);
+        else reject(new Error('Zona waktu perangkat tidak dikenali'));
+      },
       (e) => reject(new Error(geoReason(e.code))),
       { timeout: 10_000, maximumAge: 3_600_000 },
     );
