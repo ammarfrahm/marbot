@@ -13,7 +13,7 @@ Prayer times, qibla direction and the Hijri calendar for every kabupaten and kot
 - **Abroad:** when no kab/kota is within 150 km, the app uses your coordinates and your device's time zone, daylight saving included. It names the place by its coordinates and labels the times as calculated, not Kemenag.
 - **Offline:** the app installs to the home screen, and the current month's schedule is cached on the device.
 
-The interface is in Indonesian. There are no accounts, no tracking and no backend.
+The interface is in Indonesian and English. English lives under `/en/` (`/en/kiblat/`, `/en/kalender/`), and the link in the top corner of each page opens the other language and remembers your choice on the device. All text is in `src/lib/i18n.ts`: the Indonesian object defines the shape and English must fill it. There are no accounts, no tracking and no backend.
 
 ## Sources
 
