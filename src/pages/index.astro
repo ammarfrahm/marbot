@@ -192,8 +192,8 @@ import PanelBoot from '../components/PanelBoot.astro';
         const used = merged.today.source;
         setText('source-note', `Sumber: ${used.credit}`);
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
-        retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan.') : '';
-        if (used.id !== preferred) setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.`);
+        retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
+        if (used.id !== preferred) setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
         else quietStatus();
         // Offline waits for the online event; online retries like a failed load.
         if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -296,7 +296,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       const join = (t: string) => (retry ? `${t} ${retry}` : t);
       if (cityNote) setStatus(join(cityNote), cityAction);
       else if (!chosen) setStatus(join(`Jadwal untuk ${titleCase(city.name)}.`), { label: 'Pakai lokasi saya', run: locate });
-      else setStatus(retry ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat. Dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan. Sambungkan internet sebentar.') : '');
+      else setStatus(retry);
     }
 
     /** The days held for the city we just left: a way back shows them at once; any other city shows loading, never these. */
