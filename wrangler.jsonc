@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "marbot",
+  "account_id": "6f7ec0095181ab0532692de95a89c05e",
   "compatibility_date": "2026-11-01",
   "assets": { "directory": "./dist" },
   "routes": [{ "pattern": "marbot.ammar.id", "custom_domain": true }]
