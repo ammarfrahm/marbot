@@ -3,52 +3,72 @@ export const PRAYERS = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const;
 
 export type TimeName = (typeof TIMES)[number];
 export type PrayerName = (typeof PRAYERS)[number];
-/** One day of times in the city's local wall clock: date "YYYY-MM-DD", times "HH:MM". */
+/** One day of times in the place's local wall clock: date "YYYY-MM-DD", times "HH:MM". */
 export type DaySchedule = { date: string } & Record<TimeName, string>;
-/** Indonesia has no DST, so a fixed offset is the whole timezone: WIB 7, WITA 8, WIT 9. */
-export type UtcOffset = 7 | 8 | 9;
 
-export const ZONE_LABEL: Record<UtcOffset, string> = { 7: 'WIB', 8: 'WITA', 9: 'WIT' };
-export const ZONE_IANA: Record<UtcOffset, string> = {
-  7: 'Asia/Jakarta',
-  8: 'Asia/Makassar',
-  9: 'Asia/Jayapura',
-};
+/** Indonesia's three zones, which the app calls by their Indonesian names. */
+export const ZONE_LABEL: Record<string, string> = { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' };
 
 const DAY_MS = 86_400_000;
 
-/** The city's calendar date ("YYYY-MM-DD") at instant `now`, `addDays` later. */
-export function cityDate(now: number, offset: UtcOffset, addDays = 0): string {
-  return new Date(now + offset * 3_600_000 + addDays * DAY_MS).toISOString().slice(0, 10);
+// tick() asks every second, and a formatter is costly to build.
+const formats = new Map<string, Intl.DateTimeFormat>();
+function format(kind: string, tz: string, locale: string, opts: Intl.DateTimeFormatOptions) {
+  const key = `${kind}|${tz}`;
+  let f = formats.get(key);
+  if (!f) formats.set(key, (f = new Intl.DateTimeFormat(locale, { ...opts, timeZone: tz })));
+  return f;
 }
 
-/** The city's wall-clock time ("HH:MM") at instant `now`. */
-export function cityClock(now: number, offset: UtcOffset): string {
-  return new Date(now + offset * 3_600_000).toISOString().slice(11, 16);
+/** The place's calendar date ("YYYY-MM-DD") at instant `now`, `addDays` calendar days later (not 24 h steps, so DST days are right). */
+export function placeDate(now: number, tz: string, addDays = 0): string {
+  const date = format('date', tz, 'en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return addDays ? new Date(Date.parse(`${date}T00:00:00Z`) + addDays * DAY_MS).toISOString().slice(0, 10) : date;
 }
 
-/** The instant (ms) of a city wall-clock time. */
-export function toInstant(date: string, hhmm: string, offset: UtcOffset): number {
-  return Date.parse(`${date}T${hhmm}:00+0${offset}:00`);
+/** The place's wall-clock time ("HH:MM") at instant `now`. */
+export function placeClock(now: number, tz: string): string {
+  return format('clock', tz, 'en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
+}
+
+/** WIB, WITA or WIT in Indonesia; elsewhere the zone's short name at `now` ("GMT", "GMT+1"). */
+export function zoneLabel(tz: string, now: number): string {
+  return ZONE_LABEL[tz] ?? format('zone', tz, 'en', { timeZoneName: 'short' }).formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? tz;
+}
+
+/** How far the place's wall clock is ahead of UTC at instant `t`, in ms. */
+function offsetAt(t: number, tz: string): number {
+  const p = Object.fromEntries(
+    format('wall', tz, 'en-US', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23' })
+      .formatToParts(t).map((x) => [x.type, Number(x.value)]),
+  );
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(t / 1000) * 1000;
+}
+
+/** The instant (ms) of a place wall-clock time. A second pass settles times just after a DST change. */
+export function toInstant(date: string, hhmm: string, tz: string): number {
+  const wall = Date.parse(`${date}T${hhmm}:00Z`);
+  const first = wall - offsetAt(wall, tz);
+  return wall - offsetAt(first, tz);
 }
 
 export type PrayerTime = { name: PrayerName; date: string; time: string; at: number };
 
 /** Every prayer in `days`, in time order. */
-function prayerTimes(days: DaySchedule[], offset: UtcOffset): PrayerTime[] {
+function prayerTimes(days: DaySchedule[], tz: string): PrayerTime[] {
   return days
-    .flatMap((day) => PRAYERS.map((name) => ({ name, date: day.date, time: day[name], at: toInstant(day.date, day[name], offset) })))
+    .flatMap((day) => PRAYERS.map((name) => ({ name, date: day.date, time: day[name], at: toInstant(day.date, day[name], tz) })))
     .sort((a, b) => a.at - b.at);
 }
 
 /** First prayer strictly after `now`, or null when `days` doesn't reach that far. */
-export function nextPrayer(days: DaySchedule[], now: number, offset: UtcOffset): PrayerTime | null {
-  return prayerTimes(days, offset).find((p) => p.at > now) ?? null;
+export function nextPrayer(days: DaySchedule[], now: number, tz: string): PrayerTime | null {
+  return prayerTimes(days, tz).find((p) => p.at > now) ?? null;
 }
 
 /** Latest prayer at or before `now`, or null when `days` doesn't reach back that far. */
-export function lastPrayer(days: DaySchedule[], now: number, offset: UtcOffset): PrayerTime | null {
-  return prayerTimes(days, offset).findLast((p) => p.at <= now) ?? null;
+export function lastPrayer(days: DaySchedule[], now: number, tz: string): PrayerTime | null {
+  return prayerTimes(days, tz).findLast((p) => p.at <= now) ?? null;
 }
 
 /** Time left until the target: "HH:MM:SS"; partial seconds round up, clamped at zero. */

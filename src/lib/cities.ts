@@ -1,10 +1,11 @@
 import data from '../data/cities.json';
-import type { UtcOffset } from './schedule';
 
-/** A myQuran kab/kota: `id` is myQuran's city id, `lat`/`lon` from OpenStreetMap. */
-export type City = { id: string; name: string; region: string; lat: number; lon: number; utcOffset: UtcOffset };
+/** A myQuran kab/kota: `id` is myQuran's city id, `lat`/`lon` from OpenStreetMap, `tz` its IANA zone. */
+export type City = { id: string; name: string; region: string; lat: number; lon: number; tz: string };
 
-export const CITIES = data as City[];
+// Indonesia has no DST, so the data file keeps the UTC offset: WIB 7, WITA 8, WIT 9.
+const ZONE_OF_OFFSET: Record<number, string> = { 7: 'Asia/Jakarta', 8: 'Asia/Makassar', 9: 'Asia/Jayapura' };
+export const CITIES: City[] = (data as (Omit<City, 'tz'> & { utcOffset: number })[]).map(({ utcOffset, ...c }) => ({ ...c, tz: ZONE_OF_OFFSET[utcOffset] }));
 export const DEFAULT_CITY_ID = '1301'; // KOTA JAKARTA
 
 /** "KAB. BANDUNG BARAT" → "Kab. Bandung Barat"; acronyms stay: "DKI JAKARTA" → "DKI Jakarta" */

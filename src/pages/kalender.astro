@@ -54,7 +54,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
 <script>
   import { cityById, DEFAULT_CITY_ID } from '../lib/cities';
   import { addDays, formatHijri, HIJRI_MONTHS, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
-  import { cityDate } from '../lib/schedule';
+  import { placeDate } from '../lib/schedule';
   import { $ } from '../lib/dom';
   import { monthStep } from '../lib/keys';
   import { savedCity } from '../lib/store';
@@ -147,7 +147,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   }
 
   function render() {
-    today = cityDate(Date.now(), city.utcOffset);
+    today = placeDate(Date.now(), city.tz);
     const hijri = toHijri(today);
     const month = hijriMonthOf(today);
     $('greg-today').textContent = greg(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -170,7 +170,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   });
   // An app left open overnight should show the new day when it comes back.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && cityDate(Date.now(), city.utcOffset) !== today) render();
+    if (!document.hidden && placeDate(Date.now(), city.tz) !== today) render();
   });
   render();
 </script>

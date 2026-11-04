@@ -1,4 +1,4 @@
-import { TIMES, ZONE_IANA, type DaySchedule, type TimeName } from './schedule';
+import { TIMES, type DaySchedule, type TimeName } from './schedule';
 import type { City } from './cities';
 
 export type SourceId = 'myquran' | 'aladhan';
@@ -52,7 +52,7 @@ export const aladhan: Source = {
   label: 'Aladhan · hitungan, bisa 2–4 menit lebih awal',
   url: (city, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${city.lat}&longitude=${city.lon}` +
-    `&method=20&timezonestring=${ZONE_IANA[city.utcOffset]}`,
+    `&method=20&timezonestring=${city.tz}`,
   parse(json) {
     type Day = { timings: Record<string, unknown>; date: { gregorian: { date: string } } };
     const data = (json as { data?: Day[] })?.data;

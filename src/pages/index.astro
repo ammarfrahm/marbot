@@ -57,7 +57,7 @@ import PanelBoot from '../components/PanelBoot.astro';
   <script>
     import { cityById, DEFAULT_CITY_ID, offerLinked, titleCase, type City } from '../lib/cities';
     import {
-      cityClock, cityDate, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, capitalise, daysWhileLoading, toInstant, ZONE_IANA, ZONE_LABEL, type DaySchedule, type TimeName, type UtcOffset,
+      formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, toInstant, zoneLabel, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { SOURCES, type Source, type SourceId } from '../lib/sources';
@@ -178,7 +178,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       const token = ++loadToken;
       const now = Date.now();
       // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
-      const wanted = [-1, 0, 1].map((d) => cityDate(now, city.utcOffset, d));
+      const wanted = [-1, 0, 1].map((d) => placeDate(now, city.tz, d));
       loadedFor = `${city.id}:${wanted[1]}`;
       const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
       const merged = mergeMonths(wanted, wanted[1], months, await Promise.allSettled(months.map((ym) => loadMonth(city, ym))));
@@ -209,7 +209,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         // Way back offline: the saved city, else the default one if its month is on the device.
         const saved = savedCity();
         const fallback = cityById(DEFAULT_CITY_ID)!;
-        const ym = cityDate(now, fallback.utcOffset).slice(0, 7);
+        const ym = placeDate(now, fallback.tz).slice(0, 7);
         const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
         if (!navigator.onLine && back && back.id !== city.id) {
           const heldNow = left;
@@ -225,22 +225,21 @@ import PanelBoot from '../components/PanelBoot.astro';
 
     const SOON_MS = 10 * 60_000;
     const ARRIVED_MS = 10 * 60_000;
-    const dateFormats: Partial<Record<UtcOffset, Intl.DateTimeFormat>> = {};
-    const dateFormat = (offset: UtcOffset) =>
-      (dateFormats[offset] ??= new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: ZONE_IANA[offset] }));
+    const dateFormats: Record<string, Intl.DateTimeFormat> = {};
+    const dateFormat = (tz: string) => (dateFormats[tz] ??= new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: tz }));
 
     function tick() {
       const now = Date.now();
-      const zone = ZONE_LABEL[city.utcOffset];
-      const today = cityDate(now, city.utcOffset);
+      const zone = zoneLabel(city.tz, now);
+      const today = placeDate(now, city.tz);
       if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
 
-      setText('today', `${dateFormat(city.utcOffset).format(now)} · ${cityClock(now, city.utcOffset)} ${zone}`);
+      setText('today', `${dateFormat(city.tz).format(now)} · ${placeClock(now, city.tz)} ${zone}`);
       const hijri = toHijri(today);
       setText('hijri', hijri ? formatHijri(hijri) : '\u00a0');
 
-      const next = nextPrayer(days, now, city.utcOffset);
-      const last = lastPrayer(days, now, city.utcOffset);
+      const next = nextPrayer(days, now, city.tz);
+      const last = lastPrayer(days, now, city.tz);
       // A prayer stays "arrived" for a while; before that, the last minutes count down in accent.
       const arrived = last && now - last.at < ARRIVED_MS ? last : null;
       const shown = arrived ?? next;
@@ -265,7 +264,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         li.classList.toggle('next', current);
         if (current) li.setAttribute('aria-current', 'time');
         else li.removeAttribute('aria-current');
-        li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.utcOffset) <= now);
+        li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.tz) <= now);
       }
 
       if (arrived) {
