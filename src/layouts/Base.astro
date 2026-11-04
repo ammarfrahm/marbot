@@ -122,12 +122,14 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
       }
       .panel ::selection { background: var(--on-panel); color: var(--panel); }
       .panel-inner { max-width: 28rem; margin: 0 auto; padding: 1rem 1.25rem 1.75rem; }
-      .brand { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-size: var(--fs-sm); font-weight: 600; color: var(--on-panel-muted); }
+      .panel .brand { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 1rem; font-size: var(--fs-sm); font-weight: 600; color: var(--on-panel-muted); }
       .brand svg { width: 1.25rem; height: 1.25rem; color: var(--on-panel); }
       .brand .star { fill: var(--gold); }
       .panel h1 { margin: 0; font-size: min(var(--fs-2xl), 11vw); line-height: 1.2; font-weight: 700; }
       .panel p { margin: 0; }
       .place { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; }
+      /* Beside a title the 44px tap target overhangs the row, so the title sits where it does on pages without one. */
+      .place:has(h1) .pill { margin-block: -0.5rem; }
       main {
         max-width: 28rem;
         margin: 0 auto;
