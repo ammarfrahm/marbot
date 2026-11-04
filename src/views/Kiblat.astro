@@ -21,10 +21,8 @@ const at = (deg: number, r: number) => {
 <Base lang={lang} title={K.title} description={K.description} tab="kiblat">
   <Fragment slot="header">
     <h1>{K.heading}</h1>
-    <div class="place">
-      <p id="from">&nbsp;</p>
-      <button type="button" class="pill" data-open-city aria-label={L.changeCity}>{L.change}</button>
-    </div>
+    <button type="button" class="city from" data-open-city aria-haspopup="dialog" aria-describedby="change-city"><span id="from">&nbsp;</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg></button>
+    <span id="change-city" hidden>{L.changeCity}</span>
     <PanelBoot lang={lang} fill={{ from: 'from' }} />
   </Fragment>
 
@@ -248,7 +246,6 @@ const at = (deg: number, r: number) => {
 </script>
 
 <style>
-  #from { margin: 0; color: var(--on-panel-muted); font-size: var(--fs-sm); }
   .hero { padding: 1.5rem 1.25rem 1.25rem; text-align: center; transition: background-color 250ms ease-out; }
   .hero svg { display: block; width: min(100%, 19rem); margin: 0 auto; }
   @media (min-width: 60rem) { .hero svg { width: min(100%, 26rem); } }

@@ -16,7 +16,6 @@ const id = {
   tabs: { jadwal: 'Jadwal', kiblat: 'Kiblat', kalender: 'Kalender' },
   prayer: { imsak: 'Imsak', subuh: 'Subuh', terbit: 'Terbit', dzuhur: 'Dzuhur', ashar: 'Ashar', maghrib: 'Maghrib', isya: 'Isya' } as Record<TimeName, string>,
 
-  change: 'Ubah',
   changeCity: 'Ubah kota',
   searching: 'Mencari lokasi…',
   backTo: (name: string) => `Kembali ke ${name}`,
@@ -174,7 +173,6 @@ const en: Strings = {
   tabs: { jadwal: 'Times', kiblat: 'Qibla', kalender: 'Calendar' },
   prayer: { imsak: 'Imsak', subuh: 'Fajr', terbit: 'Sunrise', dzuhur: 'Dhuhr', ashar: 'Asr', maghrib: 'Maghrib', isya: 'Isha' },
 
-  change: 'Change',
   changeCity: 'Change city',
   searching: 'Finding your location…',
   backTo: (name) => `Back to ${name}`,

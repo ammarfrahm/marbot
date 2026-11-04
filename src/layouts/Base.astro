@@ -170,8 +170,12 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
       .brand .star { fill: var(--gold); }
       .panel h1 { margin: 0; font-size: min(var(--fs-2xl), 11vw); line-height: 1.2; font-weight: 700; }
       .panel p { margin: 0; }
-      .place { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; }
-      .place:has(h1) { margin-bottom: 0.375rem; }
+      /* The place name is the control: it opens the city picker, so it needs no separate button beside it. */
+      .panel .city { display: inline-flex; align-items: center; gap: 0.2em; width: auto; min-height: 2.75rem; margin: -0.4rem -0.5rem; padding: 0 0.5rem; border: 0; border-radius: var(--r-md); background: transparent; color: inherit; font: inherit; text-align: start; }
+      .city svg { flex: none; width: 0.85em; height: 0.85em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.75; }
+      @media (hover: hover) { .panel .city:hover { filter: none; background: color-mix(in srgb, var(--on-panel) 10%, transparent); } }
+      .panel .city.from { margin-top: -0.1rem; color: var(--on-panel-muted); font-size: var(--fs-sm); font-weight: 600; }
+      .city.from svg { width: 1.1em; height: 1.1em; opacity: 1; }
       main {
         max-width: 28rem;
         margin: 0 auto;
