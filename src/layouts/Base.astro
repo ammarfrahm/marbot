@@ -171,8 +171,7 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
       .panel h1 { margin: 0; font-size: min(var(--fs-2xl), 11vw); line-height: 1.2; font-weight: 700; }
       .panel p { margin: 0; }
       .place { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; }
-      /* Beside a title the 44px tap target overhangs the row, so the title sits where it does on pages without one. */
-      .place:has(h1) .pill { margin-block: -0.5rem; }
+      .place:has(h1) { margin-bottom: 0.375rem; }
       main {
         max-width: 28rem;
         margin: 0 auto;
@@ -240,10 +239,12 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
       @media (hover: hover) { button:hover { filter: brightness(1.12); } }
       select:focus-visible, input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
       .panel button:focus-visible, .panel a:focus-visible { outline-color: var(--on-panel); }
+      /* The painted pill stays small beside the text; the invisible ::after keeps the 44px tap target. */
       .pill {
+        position: relative;
         width: auto;
-        min-height: 2.75rem;
-        padding: 0.3rem 1rem;
+        min-height: 2rem;
+        padding: 0.25rem 0.875rem;
         border: 0;
         border-radius: var(--r-pill);
         background: color-mix(in srgb, var(--on-panel) 14%, transparent);
@@ -251,6 +252,7 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
         font-size: var(--fs-sm);
         font-weight: 600;
       }
+      .pill::after { content: ''; position: absolute; inset: -0.375rem 0; }
       .note { margin: 1.75rem 0.25rem 0; color: var(--muted); font-size: var(--fs-sm); text-wrap: pretty; }
     </style>
   </body>
