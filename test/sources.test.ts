@@ -10,8 +10,8 @@ describe('sources', () => {
     const days = myquran.parse(myquranMonth);
     expect(days).toHaveLength(30);
     expect(days[2]).toEqual({
-      date: '2026-11-03', imsak: '03:58', subuh: '04:08', terbit: '05:23',
-      dzuhur: '11:40', ashar: '14:56', maghrib: '17:50', isya: '19:01',
+      date: '2026-11-03', imsak: '03:58', fajr: '04:08', sunrise: '05:23',
+      dhuhr: '11:40', asr: '14:56', maghrib: '17:50', isha: '19:01',
     });
   });
 
@@ -26,7 +26,7 @@ describe('sources', () => {
     expect(() => myquran.parse({ status: false, message: 'error' })).toThrow();
     const broken = structuredClone(myquranMonth);
     broken.data.jadwal[5].isya = '-';
-    expect(() => myquran.parse(broken)).toThrow(/bad isya/);
+    expect(() => myquran.parse(broken)).toThrow(/bad isha/);
   });
 });
 
@@ -38,8 +38,8 @@ describe('places', () => {
   it('reads a London month, dropping the "(BST)" suffix', () => {
     const days = aladhan.parse(londonMonth);
     expect(days).toHaveLength(31);
-    expect(days[28]).toEqual({ date: '2026-03-29', imsak: '04:36', subuh: '04:46', terbit: '06:43', dzuhur: '13:05', ashar: '16:33', maghrib: '19:29', isya: '21:19' });
-    expect(days[27].subuh).toBe('03:49'); // GMT the day before the change
+    expect(days[28]).toEqual({ date: '2026-03-29', imsak: '04:36', fajr: '04:46', sunrise: '06:43', dhuhr: '13:05', asr: '16:33', maghrib: '19:29', isha: '21:19' });
+    expect(days[27].fajr).toBe('03:49'); // GMT the day before the change
   });
   it('asks Aladhan for Kemenag angles in a kab/kota', () => {
     expect(aladhan.url(jakarta, 2026, 11)).toBe(

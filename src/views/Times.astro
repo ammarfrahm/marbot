@@ -183,7 +183,7 @@ const T = L.times;
     async function refresh() {
       const token = ++loadToken;
       const now = Date.now();
-      // Yesterday for the prayer before Subuh, tomorrow for the one after Isya.
+      // Yesterday for the prayer before Fajr, tomorrow for the one after Isha.
       const wanted = [-1, 0, 1].map((d) => placeDate(now, city.tz, d));
       loadedFor = `${city.id}:${wanted[1]}`;
       const months = [...new Set(wanted.map((d) => d.slice(0, 7)))];
@@ -253,7 +253,7 @@ const T = L.times;
       $('hero').dataset.state =
         !next ? (loadFailed || partial ? 'error' : 'loading') : arrived ? 'now' : next.at - now <= SOON_MS ? 'soon' : 'count';
 
-      // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
+      // After Isha the next prayer is tomorrow's Fajr, so show tomorrow's list.
       const listDate = shown?.date ?? today;
       const listed = days.find((d) => d.date === listDate);
       setText('list-title', listDate === today ? T.listToday : T.listTomorrow);
@@ -282,8 +282,8 @@ const T = L.times;
         return;
       }
       if (!next) {
-        // Partial after Isya: tomorrow's month is the one missing, so the next prayer is certainly Subuh.
-        setText('next-name', !loadFailed && partial && last?.name === 'isya' ? L.prayer.subuh : '…');
+        // Partial after Isha: tomorrow's month is the one missing, so the next prayer is certainly Fajr.
+        setText('next-name', !loadFailed && partial && last?.name === 'isha' ? L.prayer.fajr : '…');
         setCountdown('‒‒:‒‒:‒‒', false, true);
         setText('next-at', loadFailed ? T.notLoaded : partial ? T.tomorrowMissing : T.at('‒‒:‒‒', zone));
         document.title = T.title;

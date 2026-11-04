@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { daysWhileLoading, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, rowInstant, toInstant, zoneLabel, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
-  date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
-  ashar: '14:56', maghrib: '17:50', isya: '19:01', ...over,
+  date, imsak: '03:58', fajr: '04:08', sunrise: '05:23', dhuhr: '11:40',
+  asr: '14:56', maghrib: '17:50', isha: '19:01', ...over,
 });
 const at = (iso: string) => Date.parse(iso);
 const WIB = 'Asia/Jakarta';
@@ -68,18 +68,18 @@ describe('place time', () => {
 });
 
 describe('nextPrayer', () => {
-  const days = [day('2026-11-04', { subuh: '04:07' }), day('2026-11-03')];
+  const days = [day('2026-11-04', { fajr: '04:07' }), day('2026-11-03')];
 
-  it('skips Imsak and Terbit and picks the next of the five prayers', () => {
-    // 05:00 WIB: Subuh has passed, Terbit is not a prayer, so Dzuhur is next
+  it('skips Imsak and Sunrise and picks the next of the five prayers', () => {
+    // 05:00 WIB: Fajr has passed, Sunrise is not a prayer, so Dhuhr is next
     expect(nextPrayer(days, at('2026-11-03T05:00:00+07:00'), WIB)).toMatchObject({
-      name: 'dzuhur', date: '2026-11-03', time: '11:40',
+      name: 'dhuhr', date: '2026-11-03', time: '11:40',
     });
   });
 
-  it('rolls over to tomorrow’s Subuh after Isya', () => {
+  it('rolls over to tomorrow’s Fajr after Isha', () => {
     expect(nextPrayer(days, at('2026-11-03T19:01:00+07:00'), WIB)).toMatchObject({
-      name: 'subuh', date: '2026-11-04', time: '04:07', at: at('2026-11-04T04:07:00+07:00'),
+      name: 'fajr', date: '2026-11-04', time: '04:07', at: at('2026-11-04T04:07:00+07:00'),
     });
   });
 
@@ -88,43 +88,43 @@ describe('nextPrayer', () => {
   });
 
   it('counts down in the city’s zone even when the viewer is elsewhere', () => {
-    // 11:00 WITA in Makassar = 10:00 WIB; Dzuhur 11:40 WITA is 40 minutes away
+    // 11:00 WITA in Makassar = 10:00 WIB; Dhuhr 11:40 WITA is 40 minutes away
     const next = nextPrayer([day('2026-11-03')], at('2026-11-03T11:00:00+08:00'), WITA)!;
-    expect(next.name).toBe('dzuhur');
+    expect(next.name).toBe('dhuhr');
     expect(next.at - at('2026-11-03T11:00:00+08:00')).toBe(40 * 60_000);
   });
 });
 
 describe('prayers after midnight', () => {
-  // Oslo in June (Aladhan, MWL, angle-based): Isya is listed in the row of the day it follows, but falls just after midnight.
+  // Oslo in June (Aladhan, MWL, angle-based): Isha is listed in the row of the day it follows, but falls just after midnight.
   const oslo = 'Europe/Oslo';
   const days = [
-    day('2026-06-21', { subuh: '02:21', dzuhur: '13:20', ashar: '17:30', maghrib: '22:50', isya: '00:12' }),
-    day('2026-06-22', { subuh: '02:21', dzuhur: '13:20', ashar: '17:30', maghrib: '22:50', isya: '00:12' }),
+    day('2026-06-21', { fajr: '02:21', dhuhr: '13:20', asr: '17:30', maghrib: '22:50', isha: '00:12' }),
+    day('2026-06-22', { fajr: '02:21', dhuhr: '13:20', asr: '17:30', maghrib: '22:50', isha: '00:12' }),
   ];
-  it('puts Isya at 00:12 the same night, in the next calendar day', () => {
-    expect(nextPrayer(days, at('2026-06-21T23:30:00+02:00'), oslo)).toMatchObject({ name: 'isya', date: '2026-06-21', at: at('2026-06-22T00:12:00+02:00') });
+  it('puts Isha at 00:12 the same night, in the next calendar day', () => {
+    expect(nextPrayer(days, at('2026-06-21T23:30:00+02:00'), oslo)).toMatchObject({ name: 'isha', date: '2026-06-21', at: at('2026-06-22T00:12:00+02:00') });
   });
-  it('then Subuh follows that Isya', () => {
+  it('then Fajr follows that Isha', () => {
     const now = at('2026-06-22T00:30:00+02:00');
-    expect(lastPrayer(days, now, oslo)).toMatchObject({ name: 'isya', at: at('2026-06-22T00:12:00+02:00') });
-    expect(nextPrayer(days, now, oslo)).toMatchObject({ name: 'subuh', date: '2026-06-22', time: '02:21' });
+    expect(lastPrayer(days, now, oslo)).toMatchObject({ name: 'isha', at: at('2026-06-22T00:12:00+02:00') });
+    expect(nextPrayer(days, now, oslo)).toMatchObject({ name: 'fajr', date: '2026-06-22', time: '02:21' });
   });
-  it('leaves a row whose Isya is in the evening alone', () => {
-    expect(rowInstant(day('2026-11-03'), 'isya', WIB)).toBe(at('2026-11-03T19:01:00+07:00'));
+  it('leaves a row whose Isha is in the evening alone', () => {
+    expect(rowInstant(day('2026-11-03'), 'isha', WIB)).toBe(at('2026-11-03T19:01:00+07:00'));
   });
 });
 
 describe('lastPrayer', () => {
-  const days = [day('2026-11-03'), day('2026-11-02', { isya: '19:00' })];
+  const days = [day('2026-11-03'), day('2026-11-02', { isha: '19:00' })];
 
   it('picks the prayer that has just begun, counting its exact minute', () => {
-    expect(lastPrayer(days, at('2026-11-03T11:40:00+07:00'), WIB)).toMatchObject({ name: 'dzuhur', date: '2026-11-03' });
+    expect(lastPrayer(days, at('2026-11-03T11:40:00+07:00'), WIB)).toMatchObject({ name: 'dhuhr', date: '2026-11-03' });
   });
 
-  it('reaches back to yesterday’s Isya before Subuh', () => {
+  it('reaches back to yesterday’s Isha before Fajr', () => {
     expect(lastPrayer(days, at('2026-11-03T02:00:00+07:00'), WIB)).toMatchObject({
-      name: 'isya', date: '2026-11-02', time: '19:00',
+      name: 'isha', date: '2026-11-02', time: '19:00',
     });
   });
 
@@ -185,6 +185,11 @@ describe('parseCachedMonth', () => {
   });
   it('reads the { fetched, days } shape', () => {
     expect(parseCachedMonth(JSON.stringify({ fetched: 5, days }))).toEqual({ fetched: 5, days });
+  });
+  it('renames the old Indonesian keys of a month saved before the English ones', () => {
+    const old = { date: '2026-11-03', imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40', ashar: '14:56', maghrib: '17:50', isya: '19:01' };
+    expect(parseCachedMonth(JSON.stringify({ fetched: 5, days: [old] }))).toEqual({ fetched: 5, days: [day('2026-11-03')] });
+    expect(parseCachedMonth(JSON.stringify([old]))).toEqual({ fetched: 0, days: [day('2026-11-03')] });
   });
   it('rejects anything else', () => {
     expect(() => parseCachedMonth('{"x":1}')).toThrow();

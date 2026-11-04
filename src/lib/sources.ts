@@ -44,7 +44,7 @@ export const myquran: Source = {
   parse(json) {
     const rows = (json as { data?: { jadwal?: Record<string, unknown>[] } })?.data?.jadwal;
     if (!Array.isArray(rows)) throw new Error('myQuran: no jadwal');
-    const keys = Object.fromEntries(TIMES.map((t) => [t, t])) as Record<TimeName, string>;
+    const keys = { imsak: 'imsak', fajr: 'subuh', sunrise: 'terbit', dhuhr: 'dzuhur', asr: 'ashar', maghrib: 'maghrib', isha: 'isya' };
     return checked(rows.map((d) => ({ date: String(d.date), ...pick(d, keys) })));
   },
 };
@@ -67,8 +67,8 @@ export const aladhan: Source = {
     const data = (json as { data?: Day[] })?.data;
     if (!Array.isArray(data)) throw new Error('Aladhan: no data');
     const keys = {
-      imsak: 'Imsak', subuh: 'Fajr', terbit: 'Sunrise', dzuhur: 'Dhuhr',
-      ashar: 'Asr', maghrib: 'Maghrib', isya: 'Isha',
+      imsak: 'Imsak', fajr: 'Fajr', sunrise: 'Sunrise', dhuhr: 'Dhuhr',
+      asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
     };
     return checked(
       data.map((d) => {

@@ -14,7 +14,7 @@ const id = {
   otherLang: 'English',
   menu: 'Menu',
   tabs: { times: 'Jadwal', qibla: 'Kiblat', calendar: 'Kalender' },
-  prayer: { imsak: 'Imsak', subuh: 'Subuh', terbit: 'Terbit', dzuhur: 'Dzuhur', ashar: 'Ashar', maghrib: 'Maghrib', isya: 'Isya' } as Record<TimeName, string>,
+  prayer: { imsak: 'Imsak', fajr: 'Subuh', sunrise: 'Terbit', dhuhr: 'Dzuhur', asr: 'Ashar', maghrib: 'Maghrib', isha: 'Isya' } as Record<TimeName, string>,
 
   changeCity: 'Ubah kota',
   searching: 'Mencari lokasi…',
@@ -171,7 +171,7 @@ const en: Strings = {
   otherLang: 'Bahasa Indonesia',
   menu: 'Menu',
   tabs: { times: 'Times', qibla: 'Qibla', calendar: 'Calendar' },
-  prayer: { imsak: 'Imsak', subuh: 'Fajr', terbit: 'Sunrise', dzuhur: 'Dhuhr', ashar: 'Asr', maghrib: 'Maghrib', isya: 'Isha' },
+  prayer: { imsak: 'Imsak', fajr: 'Fajr', sunrise: 'Sunrise', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha' },
 
   changeCity: 'Change city',
   searching: 'Finding your location…',

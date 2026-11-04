@@ -1,7 +1,7 @@
 import { STRINGS, type Lang } from './i18n';
 
-export const TIMES = ['imsak', 'subuh', 'terbit', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const;
-export const PRAYERS = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const;
+export const TIMES = ['imsak', 'fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+export const PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
 
 export type TimeName = (typeof TIMES)[number];
 export type PrayerName = (typeof PRAYERS)[number];
@@ -56,11 +56,11 @@ export function toInstant(date: string, hhmm: string, tz: string): number {
 }
 
 /**
- * The instant of one of a row's times. Far from the equator Maghrib and Isya can pass midnight yet sit in the day's own row
- * (Oslo in June: Isya 00:11), so one earlier than the row's Dzuhur belongs to the next calendar day.
+ * The instant of one of a row's times. Far from the equator Maghrib and Isha can pass midnight yet sit in the day's own row
+ * (Oslo in June: Isha 00:11), so one earlier than the row's Dhuhr belongs to the next calendar day.
  */
 export function rowInstant(day: DaySchedule, name: TimeName, tz: string): number {
-  const late = (name === 'maghrib' || name === 'isya') && day[name] < day.dzuhur;
+  const late = (name === 'maghrib' || name === 'isha') && day[name] < day.dhuhr;
   return toInstant(late ? placeDate(Date.parse(`${day.date}T12:00:00Z`), 'UTC', 1) : day.date, day[name], tz);
 }
 
@@ -113,15 +113,20 @@ export function mergeMonths<T extends { days: DaySchedule[] }>(
   };
 }
 
-/** A cached month: the old shape was a bare array (no fetch time), the new one is `{ fetched, days }`. */
+// Months saved before the English keys used these names for the same times.
+const OLD_KEYS = { subuh: 'fajr', terbit: 'sunrise', dzuhur: 'dhuhr', ashar: 'asr', isya: 'isha' } as const;
+const renamed = (day: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(day).map(([k, v]) => [OLD_KEYS[k as keyof typeof OLD_KEYS] ?? k, v])) as DaySchedule;
+
+/** A cached month: the old shape was a bare array (no fetch time), the new one is `{ fetched, days }`; days may still use the old Indonesian keys. */
 export function parseCachedMonth(raw: string): { fetched: number; days: DaySchedule[] } {
   const v = JSON.parse(raw);
-  if (Array.isArray(v)) return { fetched: 0, days: v };
-  if (Array.isArray(v?.days)) return { fetched: Number(v.fetched) || 0, days: v.days };
+  if (Array.isArray(v)) return { fetched: 0, days: v.map(renamed) };
+  if (Array.isArray(v?.days)) return { fetched: Number(v.fetched) || 0, days: v.days.map(renamed) };
   throw new Error('bad cached month');
 }
 
-/** "subuh" → "Subuh" */
+/** "fajr" → "Fajr" */
 export const capitalise = (t: string) => t[0].toUpperCase() + t.slice(1);
 
 /** The days to show while city `to` loads: those held for it when going back to a city just left, else none, so old times never sit under a new name. */
