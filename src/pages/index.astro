@@ -73,7 +73,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     let city: Place = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
     let toSave: string | null = null; // a picked city is stored only once its schedule has loaded
     let chosen = !!stored || !!linked; // until then, offer geolocation
-    let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
+    let cityNote = ''; // e.g. the note after locating or opening a link; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
       cityNote = linked.kind === 'city' ? `Jadwal ${placeName(linked)} dari tautan.` : 'Jadwal titik ini dari tautan.';
@@ -89,7 +89,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     }
     let preferred: SourceId = store.get(storeKey('source')) === 'aladhan' ? 'aladhan' : 'myquran';
     let days: DaySchedule[] = [];
-    let loadedFor = ''; // `${cityId}:${cityDate}` the current `days` were loaded for
+    let loadedFor = ''; // `${cityId}:${date in the city}` the current `days` were loaded for
     let loadToken = 0;
     let loadFailed = false;
     let retry = ''; // set when tomorrow's month is missing: appended to the status
@@ -192,7 +192,8 @@ import PanelBoot from '../components/PanelBoot.astro';
         setText('source-note', creditFor(city, used));
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
         retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
-        if (used.id !== sourcesFor(city, preferred)[0].id) setStatus(`${sourcesFor(city, preferred)[0].name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
+        const first = sourcesFor(city, preferred)[0];
+        if (used.id !== first.id) setStatus(`${first.name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
         else quietStatus();
         // Offline waits for the online event; online retries like a failed load.
         if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
