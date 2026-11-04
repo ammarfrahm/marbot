@@ -56,6 +56,8 @@ export function initCityDialog({ current, pick }: Options) {
     setHint('');
     setInvalid(false);
     input.value = '';
+    // Android Chrome opens the whole datalist on focus while the box is empty; attach it once something is typed.
+    input.removeAttribute('list');
     input.placeholder = cityLabel(current());
     dialog.showModal();
   }
@@ -86,6 +88,8 @@ export function initCityDialog({ current, pick }: Options) {
     pickTyped();
   });
   input.addEventListener('input', () => {
+    if (input.value.trim()) input.setAttribute('list', 'city-list');
+    else input.removeAttribute('list');
     setHint('');
     setInvalid(false);
   });
