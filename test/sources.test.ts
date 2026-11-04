@@ -43,12 +43,12 @@ describe('places', () => {
   });
   it('asks Aladhan for Kemenag angles in a kab/kota', () => {
     expect(aladhan.url(jakarta, 2026, 11)).toBe(
-      `https://api.aladhan.com/v1/calendar/2026/11?latitude=${jakarta.lat}&longitude=${jakarta.lon}&method=20&timezonestring=Asia/Jakarta`,
+      `https://api.aladhan.com/v1/calendar/2026/11?latitude=${jakarta.lat}&longitude=${jakarta.lon}&method=20&timezonestring=Asia%2FJakarta`,
     );
   });
   it('asks Aladhan for MWL with angle-based adjustment abroad', () => {
     expect(aladhan.url(london, 2026, 3)).toBe(
-      'https://api.aladhan.com/v1/calendar/2026/3?latitude=51.51&longitude=-0.13&method=3&latitudeAdjustmentMethod=3&timezonestring=Europe/London',
+      'https://api.aladhan.com/v1/calendar/2026/3?latitude=51.51&longitude=-0.13&method=3&latitudeAdjustmentMethod=3&timezonestring=Europe%2FLondon',
     );
   });
   it('keeps method 20 for a spot in an Indonesian zone', () => expect(aladhan.url(offJava, 2026, 3)).toContain('&method=20&'));
@@ -58,6 +58,10 @@ describe('places', () => {
     expect(sourcesFor(jakarta, 'aladhan').map((s) => s.id)).toEqual(['aladhan', 'myquran']);
     expect(sourcesFor(jakarta, 'myquran').map((s) => s.id)).toEqual(['myquran', 'aladhan']);
     expect(sourcesFor(london, 'myquran').map((s) => s.id)).toEqual(['aladhan']);
+  });
+  it('encodes the zone in the Aladhan URL, so Etc/GMT+5 keeps its plus', () => {
+    const url = aladhan.url(placeById('geo:10,-75@Etc/GMT+5')!, 2026, 6);
+    expect(url).toContain('timezonestring=Etc%2FGMT%2B5');
   });
   it('says a located place is calculated, not Kemenag', () => {
     expect(creditFor(jakarta, myquran)).toBe('Sumber: myQuran (Kemenag)');

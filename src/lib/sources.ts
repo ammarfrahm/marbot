@@ -63,7 +63,7 @@ export const aladhan: Source = {
   url: (place, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${place.lat}&longitude=${place.lon}` +
     (isKemenag(place) ? '&method=20' : '&method=3&latitudeAdjustmentMethod=3') +
-    `&timezonestring=${place.tz}`,
+    `&timezonestring=${encodeURIComponent(place.tz)}`,
   parse(json) {
     type Day = { timings: Record<string, unknown>; date: { gregorian: { date: string } } };
     const data = (json as { data?: Day[] })?.data;
