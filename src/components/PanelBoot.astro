@@ -2,11 +2,11 @@
 import source from '../lib/panel-boot.js?raw';
 import table from '../data/hijri.json';
 import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
-import { HIJRI_MONTHS } from '../lib/hijri';
+import { STRINGS, type Lang } from '../lib/i18n';
 import { ZONE_LABEL } from '../lib/schedule';
 
 /** `fill` maps an element id to a line: name, from, today, hijri or greg. Place it right after those elements. `linked`: the page honours a ?kota= link. */
-const { fill, linked = false } = Astro.props as { fill: Record<string, string>; linked?: boolean };
+const { fill, linked = false, lang = 'id' } = Astro.props as { fill: Record<string, string>; linked?: boolean; lang?: Lang };
 const city = CITIES.find((c) => c.id === DEFAULT_CITY_ID)!;
 const lines = Object.values(fill);
 const dates = lines.some((line) => line === 'today' || line === 'hijri' || line === 'greg');
@@ -21,7 +21,7 @@ const cfg = {
   linked,
   def: { id: city.id, name: titleCase(city.name), tz: city.tz },
   cities,
-  months: HIJRI_MONTHS,
+  months: STRINGS[lang].hijri.months,
   starts: dates ? table.starts : [],
   first: table.first,
   zones: ZONE_LABEL,

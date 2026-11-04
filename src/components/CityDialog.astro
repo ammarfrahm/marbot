@@ -1,26 +1,28 @@
 ---
 import { CITIES, cityLabel } from '../lib/cities';
+import { STRINGS, type Lang } from '../lib/i18n';
 import LocateButton from './LocateButton.astro';
 
 /** `locate` adds the nearest-city button; Kiblat has its own exact-GPS button, so it leaves this one out. */
-const { title = 'Ubah kota', locate = true } = Astro.props;
+const { lang = 'id', locate = true, title } = Astro.props as { lang?: Lang; title?: string; locate?: boolean };
+const t = STRINGS[lang].dialog;
 ---
 
 <dialog id="settings" aria-labelledby="settings-title">
   <form method="dialog">
-    <h2 id="settings-title">{title}</h2>
+    <h2 id="settings-title">{title ?? t.title}</h2>
     <label>
-      Kota
-      <input id="city" aria-describedby="city-help city-hint" list="city-list" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ketik nama kota" />
+      {t.city}
+      <input id="city" aria-describedby="city-help city-hint" list="city-list" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder={t.placeholder} />
       <datalist id="city-list">
         {CITIES.map((c) => <option value={cityLabel(c)} />)}
       </datalist>
     </label>
-    <p id="city-help">Ketik nama kab/kota, lalu pilih dari daftar.</p>
+    <p id="city-help">{t.help}</p>
     <p id="city-hint" role="status"></p>
-    {locate && <LocateButton id="dlg-locate" label="Lokasi saya" />}
+    {locate && <LocateButton id="dlg-locate" label={t.myLocation} />}
     <slot />
-    <button type="submit" id="dlg-done">Selesai</button>
+    <button type="submit" id="dlg-done">{t.done}</button>
   </form>
 </dialog>
 <p id="city-announce" class="sr-only" role="status"></p>

@@ -1,18 +1,21 @@
 ---
+import { STRINGS, type Lang } from '../lib/i18n';
+
 type Tab = 'jadwal' | 'kiblat' | 'kalender';
-type Props = { title: string; description: string; tab: Tab };
-const { title, description, tab } = Astro.props;
+type Props = { title: string; description: string; tab: Tab; lang?: Lang };
+const { title, description, tab, lang = 'id' } = Astro.props;
+const t = STRINGS[lang];
 
 // Icons share one 24px grid and a 1.8 stroke.
-const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
-  { id: 'jadwal', href: '/', label: 'Jadwal', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
-  { id: 'kiblat', href: '/kiblat/', label: 'Kiblat', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9l-1.8 4.2L9 15l1.8-4.2z"/>' },
-  { id: 'kalender', href: '/kalender/', label: 'Kalender', icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v3.5M16 3v3.5"/>' },
+const TABS: { id: Tab; href: string; icon: string }[] = [
+  { id: 'jadwal', href: '/', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+  { id: 'kiblat', href: '/kiblat/', icon: '<circle cx="12" cy="12" r="8.5"/><path d="M15 9l-1.8 4.2L9 15l1.8-4.2z"/>' },
+  { id: 'kalender', href: '/kalender/', icon: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v3.5M16 3v3.5"/>' },
 ];
 ---
 
 <!doctype html>
-<html lang="id">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -41,12 +44,12 @@ const TABS: { id: Tab; href: string; label: string; icon: string }[] = [
     <main>
       <slot />
     </main>
-    <nav class="tabs" aria-label="Menu">
+    <nav class="tabs" aria-label={t.menu}>
       {
-        TABS.map((t) => (
-          <a href={t.href} aria-current={t.id === tab ? 'page' : undefined}>
-            <svg viewBox="0 0 24 24" aria-hidden="true" set:html={t.icon} />
-            {t.label}
+        TABS.map((x) => (
+          <a href={x.href} aria-current={x.id === tab ? 'page' : undefined}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" set:html={x.icon} />
+            {t.tabs[x.id]}
           </a>
         ))
       }

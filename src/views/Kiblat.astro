@@ -3,29 +3,29 @@ import Base from '../layouts/Base.astro';
 import PanelBoot from '../components/PanelBoot.astro';
 import CityDialog from '../components/CityDialog.astro';
 import LocateButton from '../components/LocateButton.astro';
+import { STRINGS, type Lang } from '../lib/i18n';
+
+const { lang = 'id' } = Astro.props as { lang?: Lang };
+const L = STRINGS[lang];
+const K = L.kiblat;
 
 // Ticks every 10°, longer at the cardinal points.
 const TICKS = Array.from({ length: 36 }, (_, i) => i * 10);
-const CARDINALS = [
-  { deg: 0, label: 'U' },
-  { deg: 90, label: 'T' },
-  { deg: 180, label: 'S' },
-  { deg: 270, label: 'B' },
-];
+const CARDINALS = K.cardinals.map((label, i) => ({ deg: i * 90, label }));
 const at = (deg: number, r: number) => {
   const a = (deg - 90) * (Math.PI / 180);
   return { x: +(120 + r * Math.cos(a)).toFixed(2), y: +(120 + r * Math.sin(a)).toFixed(2) };
 };
 ---
 
-<Base title="Arah Kiblat · Marbot" description="Arah kiblat dari kota atau lokasi Anda, dengan kompas di HP." tab="kiblat">
+<Base lang={lang} title={K.title} description={K.description} tab="kiblat">
   <Fragment slot="header">
-    <h1>Arah kiblat</h1>
+    <h1>{K.heading}</h1>
     <div class="place">
       <p id="from">&nbsp;</p>
-      <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
+      <button type="button" class="pill" data-open-city aria-label={L.changeCity}>{L.change}</button>
     </div>
-    <PanelBoot fill={{ from: 'from' }} />
+    <PanelBoot lang={lang} fill={{ from: 'from' }} />
   </Fragment>
 
   <section class="hero card" id="hero" data-mode="static">
@@ -62,28 +62,25 @@ const at = (deg: number, r: number) => {
     </svg>
     <div class="reading">
       <p id="bearing">--°</p>
-      <p id="turn">dari utara</p>
+      <p id="turn">{K.fromNorth}</p>
     </div>
   </section>
 
-  <p id="hint" role="status">Memuat…</p>
+  <p id="hint" role="status">{K.loading}</p>
   <p id="announce" class="sr-only" aria-live="polite"></p>
   <div class="actions">
-    <button type="button" id="compass" hidden>Nyalakan kompas</button>
-    <LocateButton id="locate" label="Hitung dari lokasi saya" />
+    <button type="button" id="compass" hidden>{K.compassOn}</button>
+    <LocateButton id="locate" label={K.locate} />
   </div>
 
   <dl class="facts card">
-    <div><dt>Arah</dt><dd id="fact-bearing">&nbsp;</dd></div>
-    <div><dt>Jarak ke Ka'bah</dt><dd id="fact-distance">&nbsp;</dd></div>
+    <div><dt>{K.factBearing}</dt><dd id="fact-bearing">&nbsp;</dd></div>
+    <div><dt>{K.factDistance}</dt><dd id="fact-distance">&nbsp;</dd></div>
   </dl>
 
-  <p class="note calibrate">
-    Kompas HP bisa meleset beberapa derajat di dekat logam, magnet, atau perangkat listrik. Jika arahnya melompat,
-    gerakkan HP membentuk angka 8 untuk kalibrasi.
-  </p>
-  <noscript><p>Marbot butuh JavaScript untuk menghitung arah kiblat.</p></noscript>
-  <CityDialog locate={false} />
+  <p class="note calibrate">{K.calibrate}</p>
+  <noscript><p>{K.needJs}</p></noscript>
+  <CityDialog lang={lang} locate={false} />
 </Base>
 
 <script>
@@ -93,13 +90,16 @@ const at = (deg: number, r: number) => {
   import { $, setText } from '../lib/dom';
   import { geoReason } from '../lib/geo';
   import { initCityDialog } from '../lib/city-dialog';
+  import { pageLang, STRINGS } from '../lib/i18n';
+
+  const lang = pageLang();
+  const L = STRINGS[lang];
+  const K = L.kiblat;
 
   const hero = $<HTMLElement>('hero');
   const dial = $<SVGGElement>('dial');
   const cardinals = [...document.querySelectorAll('.cardinal')];
   const ALIGNED_DEG = 3;
-  const NORTH_TIP = 'Tidak tahu arah utara? Matahari terbit di timur.';
-  const POINTS = ['utara', 'timur laut', 'timur', 'tenggara', 'selatan', 'barat daya', 'barat', 'barat laut'];
 
   let city = savedCity() ?? cityById(DEFAULT_CITY_ID)!;
   let bearing = 0;
@@ -119,17 +119,15 @@ const at = (deg: number, r: number) => {
     msg = '';
     $('qibla').setAttribute('transform', `rotate(${bearing.toFixed(2)} 120 120)`);
     $('from').textContent = from;
-    $('fact-bearing').textContent = `${bearing.toFixed(1).replace('.', ',')}° dari utara, ke ${POINTS[Math.round(bearing / 45) % 8]}`;
-    $('fact-distance').textContent = `${Math.round(distanceKm(lat, lon, KAABA.lat, KAABA.lon)).toLocaleString('id-ID')} km`;
+    $('fact-bearing').textContent = K.bearingFact(bearing.toFixed(1).replace('.', L.decimal), K.points[Math.round(bearing / 45) % 8]);
+    $('fact-distance').textContent = `${Math.round(distanceKm(lat, lon, KAABA.lat, KAABA.lon)).toLocaleString(L.locale)} km`;
     if (hero.dataset.mode === 'static') showStatic();
   }
 
   function showStatic() {
     setText('bearing', `${Math.round(bearing)}°`);
-    setText('turn', 'dari utara');
-    setText('hint', msg || (noCompass
-      ? `Tanpa kompas: pakai arah ${Math.round(bearing)}° dari utara. ${NORTH_TIP}`
-      : `Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah. ${NORTH_TIP}`));
+    setText('turn', K.fromNorth);
+    setText('hint', msg || `${noCompass ? K.noCompass(Math.round(bearing)) : K.faceNorth} ${K.northTip}`);
   }
 
   // Compass. Headings are smoothed as a unit vector so 359° and 1° average to 0°, not 180°.
@@ -175,12 +173,12 @@ const at = (deg: number, r: number) => {
     if (nowAligned && !aligned) navigator.vibrate?.(40);
     aligned = nowAligned;
     hero.dataset.mode = aligned ? 'aligned' : 'live';
-    setText('bearing', aligned ? 'Kiblat' : `${Math.round(Math.abs(turn))}°`);
-    setText('turn', aligned ? 'sudah lurus' : turn > 0 ? 'putar ke kanan' : 'putar ke kiri');
-    setText('hint', msg || (aligned ? 'Bagian atas HP menghadap kiblat.' : 'Pegang HP mendatar, putar badan sampai tanda di atas bertemu Ka’bah.'));
+    setText('bearing', aligned ? K.aligned : `${Math.round(Math.abs(turn))}°`);
+    setText('turn', aligned ? K.alignedLine : turn > 0 ? K.turnRight : K.turnLeft);
+    setText('hint', msg || (aligned ? K.alignedHint : K.liveHint));
     $<HTMLButtonElement>('compass').hidden = true;
 
-    const spoken = announceTurn(said, turn, aligned, Date.now());
+    const spoken = announceTurn(said, turn, aligned, Date.now(), lang);
     said = spoken.next;
     if (spoken.say) $('announce').textContent = spoken.say;
   }
@@ -204,7 +202,7 @@ const at = (deg: number, r: number) => {
     $('compass').addEventListener('click', async () => {
       const answer = await Orientation.requestPermission!().catch(() => 'denied');
       if (answer === 'granted') listen('deviceorientation');
-      else say('Izin kompas ditolak. Hadapkan huruf U ke utara, lalu ikuti garis ke Ka’bah.');
+      else say(`${K.compassDenied} ${K.faceNorth}`);
     });
   } else if (Orientation) {
     listen('deviceorientation');
@@ -214,25 +212,24 @@ const at = (deg: number, r: number) => {
   let undo: { label: string; run: () => void } | null = null;
   function setUndo(to: typeof undo) {
     undo = to;
-    $('locate').querySelector('span')!.textContent = to?.label ?? 'Hitung dari lokasi saya';
+    $('locate').querySelector('span')!.textContent = to?.label ?? K.locate;
   }
   function useCity() {
-    setOrigin(city.lat, city.lon, `dari ${placeName(city)}`);
+    setOrigin(city.lat, city.lon, L.fromPlace(placeName(city, lang)));
     setUndo(null);
   }
-  const backTo = (name: string) => `Kembali ke ${name}`;
-
+  
   $('locate').addEventListener('click', () => {
     if (undo) return undo.run();
-    if (!('geolocation' in navigator)) return say('Browser ini tidak mendukung lokasi.');
-    say('Mencari lokasi…');
+    if (!('geolocation' in navigator)) return say(`${L.noGeolocation}.`);
+    say(L.searching);
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
-        setUndo({ label: backTo(placeName(city)), run: useCity });
+        setOrigin(coords.latitude, coords.longitude, K.fromYou(Math.round(coords.accuracy)));
+        setUndo({ label: L.backTo(placeName(city, lang)), run: useCity });
       },
       (e) => {
-        say(`${geoReason(e.code)}. Arah tetap dihitung dari ${placeName(city)}.`);
+        say(K.keptCity(geoReason(e.code, lang), placeName(city, lang)));
       },
       { enableHighAccuracy: true, timeout: 15_000 },
     );
@@ -245,7 +242,7 @@ const at = (deg: number, r: number) => {
     // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
     if (navigator.onLine) saveCity(c);
     useCity();
-    if (!navigator.onLine) say(`Kiblat dihitung dari ${placeName(c)}. Kota belum disimpan; pilih lagi saat online.`);
+    if (!navigator.onLine) say(K.offlinePick(placeName(c, lang)));
   }
   initCityDialog({ current: () => city, pick: (c) => pickCity(c) });
 </script>

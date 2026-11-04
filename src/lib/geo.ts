@@ -1,3 +1,4 @@
+import { STRINGS, type Lang } from './i18n';
+
 /** Why a geolocation request failed, in a short phrase ("Izin lokasi ditolak"). */
-export const geoReason = (code: number) =>
-  ({ 1: 'Izin lokasi ditolak', 2: 'Lokasi tidak ditemukan', 3: 'Lokasi terlalu lama dicari' } as Record<number, string>)[code] ?? 'Lokasi tidak tersedia';
+export const geoReason = (code: number, lang: Lang = 'id') => STRINGS[lang].geo[code] ?? STRINGS[lang].geo.other;

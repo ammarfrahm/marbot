@@ -1,3 +1,5 @@
+import { STRINGS, type Lang } from './i18n';
+
 export const TIMES = ['imsak', 'subuh', 'terbit', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const;
 export const PRAYERS = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'] as const;
 
@@ -31,9 +33,10 @@ export function placeClock(now: number, tz: string): string {
   return format('clock', tz, 'en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now);
 }
 
-/** WIB, WITA or WIT in Indonesia; elsewhere the zone's short name at `now` ("GMT", "GMT+1"). */
-export function zoneLabel(tz: string, now: number): string {
-  return ZONE_LABEL[tz] ?? format('zone', tz, 'en', { timeZoneName: 'short' }).formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? tz;
+/** WIB, WITA or WIT in Indonesia; elsewhere the zone's short name at `now` ("GMT", "GMT+1"), in the page's language. */
+export function zoneLabel(tz: string, now: number, lang: Lang = 'id'): string {
+  const locale = STRINGS[lang].zoneLocale;
+  return ZONE_LABEL[tz] ?? format(`zone|${locale}`, tz, locale, { timeZoneName: 'short' }).formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? tz;
 }
 
 /** How far the place's wall clock is ahead of UTC at instant `t`, in ms. */

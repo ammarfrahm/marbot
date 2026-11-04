@@ -1,27 +1,30 @@
 ---
 import Base from '../layouts/Base.astro';
 import PanelBoot from '../components/PanelBoot.astro';
+import { STRINGS, type Lang } from '../lib/i18n';
+
+const { lang = 'id' } = Astro.props as { lang?: Lang };
+const K = STRINGS[lang].kalender;
 
 // Six empty rows hold the grid's height until the script fills it, so nothing below jumps.
 const ROWS = Array.from({ length: 6 }, () => Array.from({ length: 7 }));
-const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 ---
 
-<Base title="Kalender Hijriah · Marbot" description="Tanggal Hijriah hari ini, hari-hari penting berikutnya, dan kalender bulan Hijriah." tab="kalender">
+<Base lang={lang} title={K.title} description={K.description} tab="kalender">
   <Fragment slot="header">
     <h1 id="hijri-today">&nbsp;</h1>
     <p id="greg-today">&nbsp;</p>
-    <PanelBoot fill={{ 'hijri-today': 'hijri', 'greg-today': 'greg' }} />
+    <PanelBoot lang={lang} fill={{ 'hijri-today': 'hijri', 'greg-today': 'greg' }} />
   </Fragment>
 
   <section class="upcoming" aria-labelledby="upcoming-title">
-    <h2 id="upcoming-title" class="section-title">Hari penting berikutnya</h2>
+    <h2 id="upcoming-title" class="section-title">{K.upcoming}</h2>
     <ol id="upcoming" class="card"></ol>
   </section>
 
   <section class="month card" aria-labelledby="month-title">
     <div class="month-head">
-      <button type="button" id="prev" aria-label="Bulan sebelumnya" aria-keyshortcuts="ArrowLeft">
+      <button type="button" id="prev" aria-label={K.prev} aria-keyshortcuts="ArrowLeft">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
       </button>
       <div class="month-title">
@@ -30,43 +33,44 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
           <p id="month-span">&nbsp;</p>
         </div>
       </div>
-      <button type="button" id="next" aria-label="Bulan berikutnya" aria-keyshortcuts="ArrowRight">
+      <button type="button" id="next" aria-label={K.next} aria-keyshortcuts="ArrowRight">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
       </button>
-      <button type="button" id="this-month" class="pill" hidden>Kembali ke bulan ini</button>
+      <button type="button" id="this-month" class="pill" hidden>{K.thisMonth}</button>
     </div>
     <table id="grid" aria-labelledby="month-title">
       <thead>
-        <tr>{WEEKDAYS.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
+        <tr>{K.weekdays.map((d) => <th scope="col" abbr={d}>{d.slice(0, 3)}</th>)}</tr>
       </thead>
       <tbody>{ROWS.map((row) => <tr>{row.map(() => <td />)}</tr>)}</tbody>
     </table>
-    <ul id="month-marked"><li class="none">Tidak ada hari penting bulan ini.</li></ul>
+    <ul id="month-marked"><li class="none">{K.none}</li></ul>
   </section>
 
-  <p class="note">
-    Tanggal mengikuti kriteria MABIMS yang dipakai Kemenag. Awal Ramadan, Syawal, dan Zulhijah ditetapkan lewat sidang
-    isbat, jadi bisa bergeser sehari.
-  </p>
-  <noscript><p>Marbot butuh JavaScript untuk menampilkan kalender.</p></noscript>
+  <p class="note">{K.note}</p>
+  <noscript><p>{K.needJs}</p></noscript>
 </Base>
 
 <script>
   import { cityById, DEFAULT_CITY_ID } from '../lib/cities';
-  import { addDays, formatHijri, HIJRI_MONTHS, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
+  import { addDays, formatHijri, hijriMonthName, hijriMonthOf, markedDays, shiftMonth, toHijri, upcomingDays, type HariPenting, type HijriMonth } from '../lib/hijri';
   import { placeDate } from '../lib/schedule';
   import { $ } from '../lib/dom';
   import { monthStep } from '../lib/keys';
   import { savedCity } from '../lib/store';
+  import { pageLang, STRINGS } from '../lib/i18n';
+
+  const lang = pageLang();
+  const L = STRINGS[lang];
+  const K = L.kalender;
 
   const city = savedCity() ?? cityById(DEFAULT_CITY_ID)!;
   const DAY = 86_400_000;
 
   /** Format a yyyy-mm-dd date; the date is a calendar day, so read it in UTC. */
   const greg = (date: string, opts: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat('id-ID', { ...opts, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+    new Intl.DateTimeFormat(L.locale, { ...opts, timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
   const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
-  const inDays = (n: number) => (n === 0 ? 'hari ini' : n === 1 ? 'besok' : `${n} hari lagi`);
 
   let today = '';
   let shown: HijriMonth | null = null;
@@ -88,14 +92,14 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
   function dayItem(d: HariPenting, withCountdown: boolean, note = false) {
     const li = document.createElement('li');
     const what = el('div', 'what', '');
-    what.append(el('strong', '', d.name), el('span', 'when', formatHijri(d.hijri)), el('span', 'when', greg(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })));
-    if (note) what.append(el('span', 'when', 'Menunggu sidang isbat'));
+    what.append(el('strong', '', d.name), el('span', 'when', formatHijri(d.hijri, lang)), el('span', 'when', greg(d.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })));
+    if (note) what.append(el('span', 'when', K.awaitingIsbat));
     li.append(what);
-    if (withCountdown) li.append(el('span', 'left', inDays(daysBetween(today, d.date))));
+    if (withCountdown) li.append(el('span', 'left', K.inDays(daysBetween(today, d.date))));
     return li;
   }
 
-  /** "Menunggu sidang isbat" is said once per list, on its first pending day. */
+  /** The isbat note is said once per list, on its first pending day. */
   function withNote(days: HariPenting[], withCountdown: boolean) {
     const first = days.find((d) => d.isbat && d.date > today);
     return days.map((d) => dayItem(d, withCountdown, d === first));
@@ -105,7 +109,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     shown = m;
     const focused = document.activeElement as HTMLButtonElement | null;
     const last = addDays(m.start, m.length - 1);
-    $('month-title').textContent = `${HIJRI_MONTHS[m.month - 1]} ${m.year} H`;
+    $('month-title').textContent = `${hijriMonthName(m.month, lang)} ${m.year} ${L.hijri.era}`;
     $('month-span').textContent =
       `${greg(m.start, { day: 'numeric', month: 'long' })} – ${greg(last, { day: 'numeric', month: 'long', year: 'numeric' })}`;
     $<HTMLButtonElement>('prev').disabled = !shiftMonth(m, -1);
@@ -114,7 +118,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     // A focused button that disables or hides itself would drop focus to the page.
     if (focused && (focused.disabled || focused.hidden)) $('month-title').focus();
 
-    const marked = new Map(markedDays(m).map((d) => [d.date, d]));
+    const marked = new Map(markedDays(m, lang).map((d) => [d.date, d]));
     const body = $('grid').querySelector('tbody')!;
     const rows: HTMLTableRowElement[] = [];
     let row = document.createElement('tr');
@@ -143,7 +147,7 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     for (const r of rows) while (r.children.length < 7) r.append(document.createElement('td'));
     body.replaceChildren(...rows);
     const items = withNote([...marked.values()], false);
-    $('month-marked').replaceChildren(...(items.length ? items : [el('li', 'none', 'Tidak ada hari penting bulan ini.')]));
+    $('month-marked').replaceChildren(...(items.length ? items : [el('li', 'none', K.none)]));
   }
 
   function render() {
@@ -152,11 +156,11 @@ const WEEKDAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
     const month = hijriMonthOf(today);
     $('greg-today').textContent = greg(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     if (!hijri || !month) {
-      $('hijri-today').textContent = 'Kalender belum tersedia';
+      $('hijri-today').textContent = K.unavailable;
       return;
     }
-    $('hijri-today').textContent = formatHijri(hijri);
-    $('upcoming').replaceChildren(...withNote(upcomingDays(today, 4), true));
+    $('hijri-today').textContent = formatHijri(hijri, lang);
+    $('upcoming').replaceChildren(...withNote(upcomingDays(today, 4, lang), true));
     renderMonth(month);
   }
 

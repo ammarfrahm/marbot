@@ -1,35 +1,39 @@
 ---
 import { CITIES, DEFAULT_CITY_ID, titleCase } from '../lib/cities';
-import { PRAYERS, capitalise, TIMES } from '../lib/schedule';
+import { PRAYERS, TIMES } from '../lib/schedule';
 import { SOURCES } from '../lib/sources';
+import { STRINGS, type Lang } from '../lib/i18n';
 import Base from '../layouts/Base.astro';
 import CityDialog from '../components/CityDialog.astro';
 import PanelBoot from '../components/PanelBoot.astro';
 
+const { lang = 'id' } = Astro.props as { lang?: Lang };
+const L = STRINGS[lang];
+const J = L.jadwal;
 ---
 
-<Base title="Jadwal Sholat · Marbot" description="Jadwal sholat hari ini dan hitung mundur ke waktu sholat berikutnya." tab="jadwal">
+<Base lang={lang} title={J.title} description={J.description} tab="jadwal">
     <Fragment slot="header">
       <div class="place">
         <h1 id="city-name" tabindex="-1">{titleCase(CITIES.find((c) => c.id === DEFAULT_CITY_ID)!.name)}</h1>
-        <button type="button" class="pill" data-open-city aria-label="Ubah kota">Ubah</button>
+        <button type="button" class="pill" data-open-city aria-label={L.changeCity}>{L.change}</button>
       </div>
       <p id="today">&nbsp;</p>
       <p id="hijri">&nbsp;</p>
       <section class="hero" id="hero" data-state="loading" aria-live="polite" aria-atomic="true">
         <p id="next-name">…</p>
-        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden"> lagi</span></p>
-        <p id="next-at">pukul ‒‒:‒‒ WIB</p>
+        <p id="countdown" role="timer" aria-live="off"><span id="cd-left">‒‒:‒‒:‒‒</span><span id="cd-lagi" style="visibility: hidden">{J.left}</span></p>
+        <p id="next-at">{J.at('‒‒:‒‒', 'WIB')}</p>
       </section>
-      <PanelBoot linked fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
+      <PanelBoot linked lang={lang} fill={{ 'city-name': 'name', today: 'today', hijri: 'hijri' }} />
     </Fragment>
 
-    <h2 id="list-title" class="section-title">Jadwal hari ini</h2>
+    <h2 id="list-title" class="section-title">{J.listToday}</h2>
     <ol id="times" class="card" aria-labelledby="list-title">
       {
-        TIMES.map((t) => (
-          <li data-time={t} class:list={{ minor: !(PRAYERS as readonly string[]).includes(t) }}>
-            <span>{capitalise(t)}</span>
+        TIMES.map((time) => (
+          <li data-time={time} class:list={{ minor: !(PRAYERS as readonly string[]).includes(time) }}>
+            <span>{L.prayer[time]}</span>
             <time>‒‒:‒‒</time>
           </li>
         ))
@@ -40,20 +44,20 @@ import PanelBoot from '../components/PanelBoot.astro';
 
     <div id="foot">
       <p id="source-note">&nbsp;</p>
-      <button type="button" id="share">Bagikan</button>
+      <button type="button" id="share">{J.share}</button>
     </div>
 
-    <CityDialog title="Kota & sumber jadwal">
+    <CityDialog lang={lang} title={J.dialogTitle}>
       <label>
-        Sumber
+        {J.source}
         <select id="source" aria-describedby="source-hint">
-          {Object.values(SOURCES).map((s) => <option value={s.id}>{s.label}</option>)}
+          {Object.values(SOURCES).map((s) => <option value={s.id}>{L.sources[s.id]}</option>)}
         </select>
       </label>
-      <p id="source-hint" hidden>Di luar Indonesia hanya Aladhan.</p>
+      <p id="source-hint" hidden>{J.onlyAladhan}</p>
     </CityDialog>
 
-    <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
+    <noscript><p>{J.needJs}</p></noscript>
 
   <script>
     import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
@@ -63,9 +67,13 @@ import PanelBoot from '../components/PanelBoot.astro';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { creditFor, SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
+    import { pageLang, STRINGS } from '../lib/i18n';
     import { saveCity, savedCity, store, storeKey } from '../lib/store';
     import { initCityDialog, locatedChange, locatePlace } from '../lib/city-dialog';
 
+    const lang = pageLang();
+    const L = STRINGS[lang];
+    const J = L.jadwal;
     const sourceSelect = $<HTMLSelectElement>('source');
 
     // A shared link (?kota=<id>) is shown for this view and never stored unasked.
@@ -77,12 +85,12 @@ import PanelBoot from '../components/PanelBoot.astro';
     let cityNote = ''; // e.g. the note after locating or opening a link; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
-      cityNote = linked.kind === 'city' ? `Jadwal ${placeName(linked)} dari tautan.` : 'Jadwal titik ini dari tautan.';
+      cityNote = linked.kind === 'city' ? J.linkedCity(placeName(linked, lang)) : J.linkedSpot;
       cityAction = {
-        label: 'Simpan sebagai kota saya',
+        label: J.saveCity,
         run: () => {
           saveCity(linked);
-          cityNote = `${placeName(linked)} disimpan sebagai kota Anda.`; // stays until the next city change
+          cityNote = J.citySaved(placeName(linked, lang)); // stays until the next city change
           cityAction = undefined;
           quietStatus();
         },
@@ -119,10 +127,10 @@ import PanelBoot from '../components/PanelBoot.astro';
 
     /** Why a source failed, in words a reader can act on. */
     function describeError(e: unknown): string {
-      if (e instanceof DOMException && e.name === 'TimeoutError') return 'server tidak menjawab';
-      if (e instanceof TypeError) return navigator.onLine ? 'server tidak bisa dihubungi' : 'tidak ada koneksi internet';
+      if (e instanceof DOMException && e.name === 'TimeoutError') return J.errors.timeout;
+      if (e instanceof TypeError) return navigator.onLine ? J.errors.unreachable : J.errors.offline;
       const status = /^HTTP (\d+)/.exec((e as Error).message)?.[1];
-      return status ? `server bermasalah (${status})` : 'data jadwal tidak valid';
+      return status ? J.errors.server(status) : J.errors.invalid;
     }
 
     // AbortSignal.timeout is missing on iOS 15, so time out by hand; describeError keys on the name.
@@ -190,11 +198,11 @@ import PanelBoot from '../components/PanelBoot.astro';
         if (toSave === city.id) saveCity(city);
         toSave = null;
         const used = merged.today.source;
-        setText('source-note', creditFor(city, used));
+        setText('source-note', creditFor(city, used, lang));
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
-        retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
+        retry = noTomorrow ? (navigator.onLine ? J.tomorrowRetry : J.tomorrowOffline) : '';
         const first = sourcesFor(city, preferred)[0];
-        if (used.id !== first.id) setStatus(`${first.name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
+        if (used.id !== first.id) setStatus(`${J.sourceDown(first.name, used.name)}${retry && ` ${retry}`}`);
         else quietStatus();
         // Offline waits for the online event; online retries like a failed load.
         if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -214,11 +222,11 @@ import PanelBoot from '../components/PanelBoot.astro';
         const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
         if (!navigator.onLine && back && back.id !== city.id) {
           const heldNow = left;
-          setStatus(`Jadwal ${placeName(city)} belum tersimpan. Sambungkan internet sekali.`, {
-            label: `Kembali ke ${placeName(back)}`,
+          setStatus(J.notSaved(placeName(city, lang)), {
+            label: L.backTo(placeName(back, lang)),
             run: () => setCity(back, '', undefined, heldNow, !!saved), // the default fallback is shown, not saved
           });
-        } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
+        } else setStatus(J.failed(capitalise(describeError(merged.error))), { label: J.retry, run: refresh });
         setTimeout(() => token === loadToken && refresh(), 60_000);
       }
       tick();
@@ -227,17 +235,17 @@ import PanelBoot from '../components/PanelBoot.astro';
     const SOON_MS = 10 * 60_000;
     const ARRIVED_MS = 10 * 60_000;
     const dateFormats: Record<string, Intl.DateTimeFormat> = {};
-    const dateFormat = (tz: string) => (dateFormats[tz] ??= new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: tz }));
+    const dateFormat = (tz: string) => (dateFormats[tz] ??= new Intl.DateTimeFormat(L.locale, { dateStyle: 'full', timeZone: tz }));
 
     function tick() {
       const now = Date.now();
-      const zone = zoneLabel(city.tz, now);
+      const zone = zoneLabel(city.tz, now, lang);
       const today = placeDate(now, city.tz);
       if (loadedFor !== `${city.id}:${today}`) return void refresh(); // city midnight passed
 
       setText('today', `${dateFormat(city.tz).format(now)} · ${placeClock(now, city.tz)} ${zone}`);
       const hijri = toHijri(today);
-      setText('hijri', hijri ? formatHijri(hijri) : '\u00a0');
+      setText('hijri', hijri ? formatHijri(hijri, lang) : '\u00a0');
 
       const next = nextPrayer(days, now, city.tz);
       const last = lastPrayer(days, now, city.tz);
@@ -250,7 +258,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       // After Isya the next prayer is tomorrow's Subuh, so show tomorrow's list.
       const listDate = shown?.date ?? today;
       const listed = days.find((d) => d.date === listDate);
-      setText('list-title', listDate === today ? 'Jadwal hari ini' : 'Jadwal besok');
+      setText('list-title', listDate === today ? J.listToday : J.listTomorrow);
       for (const li of document.querySelectorAll<HTMLLIElement>('#times li')) {
         const t = li.dataset.time as TimeName;
         const cell = li.querySelector('time')!;
@@ -269,25 +277,25 @@ import PanelBoot from '../components/PanelBoot.astro';
       }
 
       if (arrived) {
-        setText('next-name', capitalise(arrived.name));
-        setCountdown('Sudah masuk');
-        setText('next-at', `sejak ${arrived.time} ${zone}`);
-        document.title = `${capitalise(arrived.name)} sudah masuk · Marbot`;
+        setText('next-name', L.prayer[arrived.name]);
+        setCountdown(J.arrived);
+        setText('next-at', J.since(arrived.time, zone));
+        document.title = J.arrivedTitle(L.prayer[arrived.name]);
         return;
       }
       if (!next) {
         // Partial after Isya: tomorrow's month is the one missing, so the next prayer is certainly Subuh.
-        setText('next-name', !loadFailed && partial && last?.name === 'isya' ? 'Subuh' : '…');
+        setText('next-name', !loadFailed && partial && last?.name === 'isya' ? L.prayer.subuh : '…');
         setCountdown('‒‒:‒‒:‒‒', false, true);
-        setText('next-at', loadFailed ? 'Belum bisa dimuat' : partial ? 'Besok belum tersedia' : `pukul ‒‒:‒‒ ${zone}`);
-        document.title = 'Jadwal Sholat · Marbot';
+        setText('next-at', loadFailed ? J.notLoaded : partial ? J.tomorrowMissing : J.at('‒‒:‒‒', zone));
+        document.title = J.title;
         return;
       }
       const left = formatCountdown(next.at - now);
-      setText('next-name', capitalise(next.name));
+      setText('next-name', L.prayer[next.name]);
       setCountdown(left, true);
-      setText('next-at', `${next.date === today ? 'pukul' : 'besok pukul'} ${next.time} ${zone}`);
-      document.title = `${left} · ${capitalise(next.name)} · Marbot`;
+      setText('next-at', (next.date === today ? J.at : J.tomorrowAt)(next.time, zone));
+      document.title = `${left} · ${L.prayer[next.name]} · Marbot`;
     }
 
     /** The status when nothing went wrong. */
@@ -295,7 +303,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       // A missing tomorrow joins whatever note or prompt is showing, so neither hides the other.
       const join = (t: string) => (retry ? `${t} ${retry}` : t);
       if (cityNote) setStatus(join(cityNote), cityAction);
-      else if (!chosen) setStatus(join(`Jadwal untuk ${placeName(city)}.`), { label: 'Pakai lokasi saya', run: locate });
+      else if (!chosen) setStatus(join(J.scheduleFor(placeName(city, lang))), { label: J.useMyLocation, run: locate });
       else setStatus(retry);
     }
 
@@ -312,8 +320,8 @@ import PanelBoot from '../components/PanelBoot.astro';
       cityNote = note;
       const heldNow = left;
       retry = '';
-      cityAction = back && { label: `Kembali ke ${placeName(back)}`, run: () => setCity(back, '', undefined, heldNow) };
-      $('city-name').textContent = placeName(c);
+      cityAction = back && { label: L.backTo(placeName(back, lang)), run: () => setCity(back, '', undefined, heldNow) };
+      $('city-name').textContent = placeName(c, lang);
       syncSource();
       toSave = persist ? c.id : null;
       history.replaceState(null, '', persist ? `?kota=${encodeURIComponent(c.id)}` : location.pathname);
@@ -323,13 +331,13 @@ import PanelBoot from '../components/PanelBoot.astro';
     }
 
     function locate() {
-      setStatus('Mencari lokasi…');
-      locatePlace().then(
+      setStatus(L.searching);
+      locatePlace(lang).then(
         (place) => {
-          const { note, back } = locatedChange(city, place);
+          const { note, back } = locatedChange(city, place, lang);
           setCity(place, note, back);
         },
-        (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${placeName(city)}.`, { label: 'Pilih kota', run: cityDialog.open }),
+        (e: Error) => setStatus(J.keptCity(e.message, placeName(city, lang)), { label: J.pickCity, run: cityDialog.open }),
       );
     }
 
@@ -367,17 +375,17 @@ import PanelBoot from '../components/PanelBoot.astro';
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
       try {
-        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeName(city)}`, url });
+        if (navigator.share) await navigator.share({ title: J.shareTitle(placeName(city, lang)), url });
         else {
           await navigator.clipboard.writeText(url);
-          flash('Tautan disalin.');
+          flash(J.linkCopied);
         }
       } catch (e) {
-        if ((e as Error).name !== 'AbortError') flash('Tautan tidak bisa dibagikan.');
+        if ((e as Error).name !== 'AbortError') flash(J.linkFailed);
       }
     });
 
-    $('city-name').textContent = placeName(city);
+    $('city-name').textContent = placeName(city, lang);
     syncSource();
     refresh();
     setInterval(tick, 1000);

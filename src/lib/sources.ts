@@ -1,5 +1,6 @@
 import { TIMES, ZONE_LABEL, type DaySchedule, type TimeName } from './schedule';
 import type { Place } from './cities';
+import { STRINGS, type Lang } from './i18n';
 
 export type SourceId = 'myquran' | 'aladhan';
 export type Source = {
@@ -8,7 +9,6 @@ export type Source = {
   name: string;
   /** The credit line under the times. */
   credit: string;
-  label: string;
   /** Whether this source has times for the place. */
   covers(place: Place): boolean;
   url(place: Place, year: number, month: number): string;
@@ -39,7 +39,6 @@ export const myquran: Source = {
   id: 'myquran',
   name: 'myQuran',
   credit: 'myQuran (Kemenag)',
-  label: 'myQuran · jadwal resmi Kemenag',
   covers: (place) => place.kind === 'city',
   url: (place, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${place.id}/${year}/${pad(month)}`,
   parse(json) {
@@ -58,7 +57,6 @@ export const aladhan: Source = {
   id: 'aladhan',
   name: 'Aladhan',
   credit: 'Aladhan',
-  label: 'Aladhan · hitungan, bisa 2–4 menit lebih awal',
   covers: () => true,
   url: (place, year, month) =>
     `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${place.lat}&longitude=${place.lon}` +
@@ -88,7 +86,7 @@ export const sourcesFor = (place: Place, preferred: SourceId): Source[] =>
   [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)].filter((s) => s.covers(place));
 
 /** The line under the times: who made them, and for a Spot that they are calculated, not Kemenag's. */
-export const creditFor = (place: Place, source: Source) =>
-  place.kind === 'city'
-    ? `Sumber: ${source.credit}`
-    : `Dihitung dari titik ini (Aladhan, metode ${isKemenag(place) ? 'sudut Kemenag' : 'MWL'}). Bukan jadwal Kemenag.`;
+export const creditFor = (place: Place, source: Source, lang: Lang = 'id') => {
+  const t = STRINGS[lang].sources;
+  return place.kind === 'city' ? t.credit(source.credit) : t.spot(isKemenag(place) ? t.kemenagAngles : t.mwl);
+};

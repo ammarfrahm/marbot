@@ -1,27 +1,25 @@
 import table from '../data/hijri.json';
+import { STRINGS, type Lang, type Strings } from './i18n';
 
 /** Month names as Kemenag's calendar spells them. */
-export const HIJRI_MONTHS = [
-  'Muharam', 'Safar', 'Rabiulawal', 'Rabiulakhir', 'Jumadilawal', 'Jumadilakhir',
-  'Rajab', 'Syakban', 'Ramadan', 'Syawal', 'Zulkaidah', 'Zulhijah',
-] as const;
+export const HIJRI_MONTHS = STRINGS.id.hijri.months;
 
 export type HijriDate = { year: number; month: number; day: number };
 export type HijriMonth = { year: number; month: number; start: string; length: number };
 export type HariPenting = { date: string; hijri: HijriDate; name: string; isbat: boolean };
 
 /** Days marked on the calendar. `isbat`: the month's start is set by Kemenag's sidang isbat. */
-const MARKED: { month: number; day: number; name: string }[] = [
-  { month: 1, day: 1, name: 'Tahun Baru Islam' },
-  { month: 1, day: 10, name: 'Asyura' },
-  { month: 3, day: 12, name: 'Maulid Nabi' },
-  { month: 7, day: 27, name: 'Isra Mikraj' },
-  { month: 8, day: 15, name: 'Nisfu Syakban' },
-  { month: 9, day: 1, name: 'Awal Ramadan' },
-  { month: 9, day: 17, name: 'Nuzulul Quran' },
-  { month: 10, day: 1, name: 'Idulfitri' },
-  { month: 12, day: 9, name: 'Hari Arafah' },
-  { month: 12, day: 10, name: 'Iduladha' },
+const MARKED: { month: number; day: number; name: keyof Strings['hijri']['days'] }[] = [
+  { month: 1, day: 1, name: 'newYear' },
+  { month: 1, day: 10, name: 'ashura' },
+  { month: 3, day: 12, name: 'mawlid' },
+  { month: 7, day: 27, name: 'isra' },
+  { month: 8, day: 15, name: 'nisfu' },
+  { month: 9, day: 1, name: 'ramadan' },
+  { month: 9, day: 17, name: 'nuzul' },
+  { month: 10, day: 1, name: 'fitr' },
+  { month: 12, day: 9, name: 'arafah' },
+  { month: 12, day: 10, name: 'adha' },
 ];
 const ISBAT_MONTHS = [9, 10, 12];
 
@@ -57,23 +55,25 @@ export function shiftMonth(m: HijriMonth, offset: number): HijriMonth | null {
   return i >= 0 && i < monthCount ? monthAt(i) : null;
 }
 
-export const formatHijri = (h: HijriDate) => `${h.day} ${HIJRI_MONTHS[h.month - 1]} ${h.year} H`;
+export const hijriMonthName = (month: number, lang: Lang = 'id') => STRINGS[lang].hijri.months[month - 1];
+
+export const formatHijri = (h: HijriDate, lang: Lang = 'id') => `${h.day} ${hijriMonthName(h.month, lang)} ${h.year} ${STRINGS[lang].hijri.era}`;
 
 /** Marked days in a month, in order. */
-export function markedDays(m: HijriMonth): HariPenting[] {
+export function markedDays(m: HijriMonth, lang: Lang = 'id'): HariPenting[] {
   return MARKED.filter((d) => d.month === m.month).map((d) => ({
     date: addDays(m.start, d.day - 1),
     hijri: { year: m.year, month: m.month, day: d.day },
-    name: d.name,
+    name: STRINGS[lang].hijri.days[d.name],
     isbat: ISBAT_MONTHS.includes(d.month),
   }));
 }
 
 /** The next `count` marked days from `date` on, today included. */
-export function upcomingDays(date: string, count: number): HariPenting[] {
+export function upcomingDays(date: string, count: number, lang: Lang = 'id'): HariPenting[] {
   const found: HariPenting[] = [];
   for (let m = hijriMonthOf(date); m && found.length < count; m = shiftMonth(m, 1)) {
-    found.push(...markedDays(m).filter((d) => d.date >= date));
+    found.push(...markedDays(m, lang).filter((d) => d.date >= date));
   }
   return found.slice(0, count);
 }

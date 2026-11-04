@@ -1,4 +1,5 @@
 import data from '../data/cities.json';
+import { STRINGS, type Lang } from './i18n';
 
 /** A myQuran kab/kota: `id` is myQuran's city id, `lat`/`lon` from OpenStreetMap, `tz` its IANA zone. */
 export type City = { kind: 'city'; id: string; name: string; region: string; lat: number; lon: number; tz: string };
@@ -30,10 +31,11 @@ function knownZone(tz: string): string | undefined {
   }
 }
 
-/** "51,51° LU 0,13° BB": rounded coordinates with Indonesian hemisphere letters; panel-boot.js mirrors this. */
-export function coordName(lat: number, lon: number): string {
-  const part = (n: number, pos: string, neg: string) => `${Math.abs(n).toFixed(2).replace('.', ',')}° ${n < 0 ? neg : pos}`;
-  return `${part(lat, 'LU', 'LS')} ${part(lon, 'BT', 'BB')}`;
+/** "51,51° LU 0,13° BB": rounded coordinates with the language's hemisphere letters and decimal mark; panel-boot.js mirrors this. */
+export function coordName(lat: number, lon: number, lang: Lang = 'id'): string {
+  const { decimal, hemisphere: h } = STRINGS[lang];
+  const part = (n: number, pos: string, neg: string) => `${Math.abs(n).toFixed(2).replace('.', decimal)}° ${n < 0 ? neg : pos}`;
+  return `${part(lat, h.N, h.S)} ${part(lon, h.E, h.W)}`;
 }
 
 /**
@@ -61,8 +63,8 @@ export function placeById(id: string | null): Place | undefined {
   return id?.startsWith('geo:') ? parseSpot(id) : cityById(id);
 }
 
-/** What the page calls a place: "Kota Bandung", or a Spot's coordinates. */
-export const placeName = (p: Place) => (p.kind === 'city' ? titleCase(p.name) : p.name);
+/** What the page calls a place: "Kota Bandung", or a Spot's coordinates in the page's language. */
+export const placeName = (p: Place, lang: Lang = 'id') => (p.kind === 'city' ? titleCase(p.name) : coordName(p.lat, p.lon, lang));
 
 export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
@@ -92,7 +94,11 @@ export function placeAt(lat: number, lon: number, tz = Intl.DateTimeFormat().res
 }
 
 /** Picker label: the province tells "Kab. Bandung" from "Kab. Bandung Barat" at a glance. */
-export const cityLabel = (p: Place) => (p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : `${p.name} (zona waktu ${p.region})`);
+export const cityLabel = (p: Place) => placeLabel(p, 'id');
+
+/** cityLabel in the page's language (only a Spot's label differs). */
+export const placeLabel = (p: Place, lang: Lang) =>
+  p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : STRINGS[lang].spotLabel(placeName(p, lang), p.region);
 
 /**
  * What a typed name could mean, best match first. The first tier with any hit wins:
@@ -125,10 +131,10 @@ export function findCity(text: string): City | undefined {
 }
 
 /** Hint for a name that is not one city: nothing found, or which ones fit. */
-export function matchHint(hits: City[], locate = true): string {
-  if (!hits.length) return `Kota tidak ditemukan. Coba nama lain${locate ? ', atau pakai Lokasi saya' : ''}.`;
-  const shown = hits.slice(0, 3).map((c) => titleCase(c.name)).join(', ');
-  return `${hits.length} kota cocok: ${shown}${hits.length > 3 ? ', dll.' : ''} — pilih dari daftar.`;
+export function matchHint(hits: City[], locate = true, lang: Lang = 'id'): string {
+  const t = STRINGS[lang].dialog;
+  if (!hits.length) return t.none(locate);
+  return t.many(hits.length, hits.slice(0, 3).map((c) => titleCase(c.name)).join(', '), hits.length > 3);
 }
 
 /** A city from a shared link is offered for saving, unless it is already the saved one. */
