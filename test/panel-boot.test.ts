@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import source from '../src/lib/panel-boot.js?raw';
 import table from '../src/data/hijri.json';
-import { CITIES, titleCase } from '../src/lib/cities';
+import { CITIES, placeById, titleCase } from '../src/lib/cities';
 import { formatHijri, HIJRI_MONTHS, toHijri } from '../src/lib/hijri';
 import { placeClock, placeDate, zoneLabel, ZONE_LABEL } from '../src/lib/schedule';
 
@@ -54,6 +54,41 @@ describe('resolvePlace', () => {
     const c = CITIES.find((x) => x.tz === 'Asia/Jayapura')!;
     const all = Object.fromEntries(CITIES.map((x) => [x.id, [titleCase(x.name), x.tz]]));
     expect(resolvePlace([c.id], { def, cities: all })).toEqual({ id: c.id, name: titleCase(c.name), tz: 'Asia/Jayapura' });
+  });
+});
+
+describe('spots', () => {
+  const london = 'geo:51.51,-0.13@Europe/London';
+  const def = { id: '1301', name: 'Kota Jakarta', tz: 'Asia/Jakarta' };
+  it('resolves a geo id to a spot named Lokasi Anda', () => {
+    expect(resolvePlace([london, null], { def, cities: {} })).toEqual({ id: london, name: 'Lokasi Anda', tz: 'Europe/London' });
+  });
+  it('agrees with placeById on what is valid', () => {
+    for (const id of [london, 'geo:91,0@Europe/London', 'geo:0,0@Mars/Base', 'geo:51.51,-0.13@europe/london', 'geo:1e3,0@Asia/Tokyo', 'geo:-90,180@Pacific/Auckland', 'geo:x']) {
+      const spot = placeById(id);
+      expect(resolvePlace([id], { def, cities: {} }).tz, id).toBe(spot ? spot.tz : def.tz);
+    }
+  });
+  it('skips a bad geo id for the next one', () => {
+    expect(resolvePlace(['geo:99,0@Asia/Tokyo', '2'], { def, cities: { '2': ['Kota Makassar', 'Asia/Makassar'] } }).name).toBe('Kota Makassar');
+  });
+  it('matches the page for a spot across London\'s change', () => {
+    const tz = 'Europe/London';
+    for (const now of [Date.parse('2026-03-29T00:30:00Z'), Date.parse('2026-03-29T01:30:00Z'), Date.parse('2026-10-25T00:30:00Z'), Date.parse('2026-10-25T01:30:00Z')]) {
+      const lines = panelLines(now, { id: london, name: 'Lokasi Anda', tz }, cfg);
+      expect(lines.today).toBe(`${new Intl.DateTimeFormat('id-ID', { dateStyle: 'full', timeZone: tz }).format(now)} · ${placeClock(now, tz)} ${zoneLabel(tz, now)}`);
+      const h = toHijri(placeDate(now, tz));
+      expect(lines.hijri).toBe(h ? formatHijri(h) : '');
+    }
+  });
+  it('writes a saved spot\'s name and zone before paint', () => {
+    const els: Record<string, { textContent: string }> = { 'city-name': { textContent: 'Kota Jakarta' }, today: { textContent: '' } };
+    panelBoot(
+      { ...cfg, cities: {}, def, fill: { 'city-name': 'name', today: 'today' } },
+      { get: () => london, linked: null, now: Date.parse('2026-07-01T10:00:00Z'), doc: { getElementById: (id: string) => els[id] ?? null } },
+    );
+    expect(els['city-name'].textContent).toBe('Lokasi Anda');
+    expect(els.today.textContent).toMatch(/ · 11:00 GMT\+1$/);
   });
 });
 

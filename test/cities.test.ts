@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { locatedChange } from '../src/lib/city-dialog';
-import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, titleCase } from '../src/lib/cities';
+import { CITIES, cityLabel, findCity, matchCities, matchHint, offerLinked, placeById, placeName, spotAt, titleCase } from '../src/lib/cities';
 
 describe('titleCase', () => {
   it('capitalises each word', () => expect(titleCase('KAB. BANDUNG BARAT')).toBe('Kab. Bandung Barat'));
@@ -66,4 +66,48 @@ describe('locatedChange', () => {
     expect(back).toBe(jakarta);
   });
   it('offers no way back when the city did not change', () => expect(locatedChange(jakarta, jakarta, 3).back).toBeUndefined());
+});
+
+describe('placeById', () => {
+  const london = { kind: 'spot', id: 'geo:51.51,-0.13@Europe/London', name: 'Lokasi Anda', region: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London' };
+  it('finds a kab/kota by id, with its zone', () => {
+    expect(placeById('1301')).toMatchObject({ kind: 'city', name: 'KOTA JAKARTA', tz: 'Asia/Jakarta' });
+    expect(new Set(CITIES.map((c) => c.tz))).toEqual(new Set(['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura']));
+  });
+  it('parses a geo id into a spot', () => expect(placeById('geo:51.51,-0.13@Europe/London')).toEqual(london));
+  it('names the spot after the last segment of its zone', () => {
+    expect(placeById('geo:40.71,-74.01@America/New_York')?.region).toBe('New York');
+    expect(placeById('geo:-34.6,-58.38@America/Argentina/Buenos_Aires')?.region).toBe('Buenos Aires');
+  });
+  it('round-trips the id of a spot made from raw coordinates', () => {
+    const spot = spotAt(51.5074, -0.1278, 'Europe/London');
+    expect(spot.id).toBe('geo:51.51,-0.13@Europe/London');
+    expect(placeById(spot.id)).toEqual(spot);
+    expect(spotAt(-0.001, 0.004, 'Asia/Tokyo').id).toBe('geo:0,0@Asia/Tokyo');
+  });
+  it('rounds a longer link to the same spot', () => expect(placeById('geo:51.5074,-0.1278@Europe/London')?.id).toBe(london.id));
+  it('reads the zone in its proper spelling', () => expect(placeById('geo:51.51,-0.13@europe/london')?.tz).toBe('Europe/London'));
+  it('refuses what a link could smuggle in', () => {
+    for (const id of [
+      'geo:91,0@Europe/London', 'geo:0,181@Europe/London', 'geo:-90.5,0@Asia/Tokyo',
+      'geo:51.51,-0.13@Mars/Base', 'geo:51.51,-0.13@', 'geo:51.51@Europe/London', 'geo:a,b@Asia/Tokyo',
+      'geo:51.51,-0.13@Europe/London<script>', 'geo:1e3,0@Asia/Tokyo', 'geo:', '9999', '', 'constructor',
+    ]) expect(placeById(id), id).toBeUndefined();
+    expect(placeById(null)).toBeUndefined();
+  });
+  it('accepts the edges of the range', () => expect(placeById('geo:-90,180@Pacific/Auckland')).toBeDefined());
+});
+
+describe('place labels', () => {
+  it('names a spot and a city', () => {
+    const spot = placeById('geo:51.51,-0.13@Europe/London')!;
+    expect(placeName(spot)).toBe('Lokasi Anda');
+    expect(cityLabel(spot)).toBe('Lokasi Anda (sekitar London)');
+    expect(placeName(CITIES[0])).toBe(titleCase(CITIES[0].name));
+  });
+  it('offers a linked spot unless it is the saved one', () => {
+    const spot = placeById('geo:51.51,-0.13@Europe/London');
+    expect(offerLinked(spot, undefined)).toBe(true);
+    expect(offerLinked(spot, placeById('geo:51.51,-0.13@Europe/London'))).toBe(false);
+  });
 });

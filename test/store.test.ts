@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CITIES } from '../src/lib/cities';
+import { CITIES, placeById } from '../src/lib/cities';
 import { saveCity, savedCity, storeKey } from '../src/lib/store';
 
 // Saved data lives under these names; changing them would silently drop every user's city and cached months.
@@ -30,6 +30,16 @@ describe('saveCity / savedCity', () => {
     data.set('bedug:place', JSON.stringify({ id: '9999', name: 'X', offset: 9 }));
     expect(savedCity()?.id).toBe('1301');
     expect(data.get('bedug:place')).toContain('9999'); // left alone
+  });
+  it('keeps a located place as its id and reads it back', () => {
+    const london = placeById('geo:51.51,-0.13@Europe/London')!;
+    saveCity(london);
+    expect(data.get('bedug:city')).toBe('geo:51.51,-0.13@Europe/London');
+    expect(savedCity()).toEqual(london);
+  });
+  it('ignores a saved geo id that no longer parses', () => {
+    data.set('bedug:city', 'geo:999,0@Europe/London');
+    expect(savedCity()).toBeUndefined();
   });
   it('is undefined with nothing saved', () => {
     expect(savedCity()).toBeUndefined();

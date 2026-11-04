@@ -87,7 +87,7 @@ const at = (deg: number, r: number) => {
 </Base>
 
 <script>
-  import { cityById, DEFAULT_CITY_ID, distanceKm, titleCase, type City } from '../lib/cities';
+  import { cityById, DEFAULT_CITY_ID, distanceKm, placeName, type Place } from '../lib/cities';
   import { announceTurn, KAABA, qiblaBearing, turnTo, type Said } from '../lib/qibla';
   import { saveCity, savedCity } from '../lib/store';
   import { $, setText } from '../lib/dom';
@@ -217,10 +217,10 @@ const at = (deg: number, r: number) => {
     $('locate').querySelector('span')!.textContent = to?.label ?? 'Hitung dari lokasi saya';
   }
   function useCity() {
-    setOrigin(city.lat, city.lon, `dari ${titleCase(city.name)}`);
+    setOrigin(city.lat, city.lon, `dari ${placeName(city)}`);
     setUndo(null);
   }
-  const backTo = (name: string) => `Kembali ke ${titleCase(name)}`;
+  const backTo = (name: string) => `Kembali ke ${name}`;
 
   $('locate').addEventListener('click', () => {
     if (undo) return undo.run();
@@ -229,10 +229,10 @@ const at = (deg: number, r: number) => {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         setOrigin(coords.latitude, coords.longitude, `dari lokasi Anda (±${Math.round(coords.accuracy)} m)`);
-        setUndo({ label: backTo(city.name), run: useCity });
+        setUndo({ label: backTo(placeName(city)), run: useCity });
       },
       (e) => {
-        say(`${geoReason(e.code)}. Arah tetap dihitung dari ${titleCase(city.name)}.`);
+        say(`${geoReason(e.code)}. Arah tetap dihitung dari ${placeName(city)}.`);
       },
       { enableHighAccuracy: true, timeout: 15_000 },
     );
@@ -240,12 +240,12 @@ const at = (deg: number, r: number) => {
 
   useCity();
 
-  function pickCity(c: City) {
+  function pickCity(c: Place) {
     city = c;
     // The bearing needs only coordinates, so it works offline; saving the city is for Jadwal, which needs the network.
     if (navigator.onLine) saveCity(c);
     useCity();
-    if (!navigator.onLine) say(`Kiblat dihitung dari ${titleCase(c.name)}. Kota belum disimpan; pilih lagi saat online.`);
+    if (!navigator.onLine) say(`Kiblat dihitung dari ${placeName(c)}. Kota belum disimpan; pilih lagi saat online.`);
   }
   initCityDialog({ current: () => city, pick: (c) => pickCity(c) });
 </script>

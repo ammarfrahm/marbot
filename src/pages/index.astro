@@ -55,12 +55,12 @@ import PanelBoot from '../components/PanelBoot.astro';
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
   <script>
-    import { cityById, DEFAULT_CITY_ID, offerLinked, titleCase, type City } from '../lib/cities';
+    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
     import {
       formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, toInstant, zoneLabel, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
-    import { SOURCES, type Source, type SourceId } from '../lib/sources';
+    import { SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
     import { saveCity, savedCity, store, storeKey } from '../lib/store';
     import { initCityDialog, locatedChange, locateNearest } from '../lib/city-dialog';
@@ -68,20 +68,20 @@ import PanelBoot from '../components/PanelBoot.astro';
     const sourceSelect = $<HTMLSelectElement>('source');
 
     // A shared link (?kota=<id>) is shown for this view and never stored unasked.
-    const linked = cityById(new URLSearchParams(location.search).get('kota'));
+    const linked = placeById(new URLSearchParams(location.search).get('kota'));
     const stored = savedCity();
-    let city: City = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
+    let city: Place = linked ?? stored ?? cityById(DEFAULT_CITY_ID)!;
     let toSave: string | null = null; // a picked city is stored only once its schedule has loaded
     let chosen = !!stored || !!linked; // until then, offer geolocation
     let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
-      cityNote = `Jadwal ${titleCase(linked.name)} dari tautan.`;
+      cityNote = `Jadwal ${linked.kind === 'city' ? placeName(linked) : `sekitar ${linked.region}`} dari tautan.`;
       cityAction = {
         label: 'Simpan sebagai kota saya',
         run: () => {
           saveCity(linked);
-          cityNote = `${titleCase(linked.name)} disimpan sebagai kota Anda.`; // stays until the next city change
+          cityNote = linked.kind === 'city' ? `${placeName(linked)} disimpan sebagai kota Anda.` : 'Lokasi disimpan sebagai kota Anda.'; // stays until the next city change
           cityAction = undefined;
           quietStatus();
         },
@@ -141,7 +141,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     const DAY_MS = 86_400_000;
     const refetching = new Set<string>();
 
-    async function fetchMonth(source: Source, c: City, ym: string, key: string): Promise<DaySchedule[]> {
+    async function fetchMonth(source: Source, c: Place, ym: string, key: string): Promise<DaySchedule[]> {
       const [y, m] = ym.split('-').map(Number);
       const res = await fetchWithTimeout(source.url(c, y, m));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -151,10 +151,9 @@ import PanelBoot from '../components/PanelBoot.astro';
     }
 
     // Cache first; a cached month older than a day is refetched quietly and used from the next load on.
-    async function loadMonth(c: City, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
-      const order = [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)];
+    async function loadMonth(c: Place, ym: string): Promise<{ source: Source; days: DaySchedule[] }> {
       let firstError: unknown;
-      for (const source of order) {
+      for (const source of sourcesFor(c, preferred)) {
         const key = storeKey(source.id, c.id, ym);
         try {
           const raw = store.get(key);
@@ -193,7 +192,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         setText('source-note', `Sumber: ${used.credit}`);
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
         retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
-        if (used.id !== preferred) setStatus(`${SOURCES[preferred].name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
+        if (used.id !== sourcesFor(city, preferred)[0].id) setStatus(`${sourcesFor(city, preferred)[0].name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
         else quietStatus();
         // Offline waits for the online event; online retries like a failed load.
         if (noTomorrow && navigator.onLine) setTimeout(() => token === loadToken && refresh(), 60_000);
@@ -213,8 +212,8 @@ import PanelBoot from '../components/PanelBoot.astro';
         const back = saved ?? (Object.values(SOURCES).some((s) => store.get(storeKey(s.id, fallback.id, ym))) ? fallback : null);
         if (!navigator.onLine && back && back.id !== city.id) {
           const heldNow = left;
-          setStatus(`Jadwal ${titleCase(city.name)} belum tersimpan. Sambungkan internet sekali.`, {
-            label: `Kembali ke ${titleCase(back.name)}`,
+          setStatus(`Jadwal ${placeName(city)} belum tersimpan. Sambungkan internet sekali.`, {
+            label: `Kembali ke ${placeName(back)}`,
             run: () => setCity(back, '', undefined, heldNow, !!saved), // the default fallback is shown, not saved
           });
         } else setStatus(`${capitalise(describeError(merged.error))}. Dicoba lagi tiap menit.`, { label: 'Coba lagi', run: refresh });
@@ -294,14 +293,14 @@ import PanelBoot from '../components/PanelBoot.astro';
       // A missing tomorrow joins whatever note or prompt is showing, so neither hides the other.
       const join = (t: string) => (retry ? `${t} ${retry}` : t);
       if (cityNote) setStatus(join(cityNote), cityAction);
-      else if (!chosen) setStatus(join(`Jadwal untuk ${titleCase(city.name)}.`), { label: 'Pakai lokasi saya', run: locate });
+      else if (!chosen) setStatus(join(`Jadwal untuk ${placeName(city)}.`), { label: 'Pakai lokasi saya', run: locate });
       else setStatus(retry);
     }
 
     /** The days held for the city we just left: a way back shows them at once; any other city shows loading, never these. */
     let left: { cityId: string; days: DaySchedule[] } = { cityId: '', days: [] };
 
-    function setCity(c: City, note = '', back?: City, held?: typeof left, persist = true) {
+    function setCity(c: Place, note = '', back?: Place, held?: typeof left, persist = true) {
       left = { cityId: city.id, days };
       days = daysWhileLoading(held, c.id);
       loadFailed = false;
@@ -311,10 +310,10 @@ import PanelBoot from '../components/PanelBoot.astro';
       cityNote = note;
       const heldNow = left;
       retry = '';
-      cityAction = back && { label: `Kembali ke ${titleCase(back.name)}`, run: () => setCity(back, '', undefined, heldNow) };
-      $('city-name').textContent = titleCase(c.name);
+      cityAction = back && { label: `Kembali ke ${placeName(back)}`, run: () => setCity(back, '', undefined, heldNow) };
+      $('city-name').textContent = placeName(c);
       toSave = persist ? c.id : null;
-      history.replaceState(null, '', persist ? `?kota=${c.id}` : location.pathname);
+      history.replaceState(null, '', persist ? `?kota=${encodeURIComponent(c.id)}` : location.pathname);
       quietStatus();
       refresh(); // sets loadedFor, so the tick below paints the loading state
       tick();
@@ -327,7 +326,7 @@ import PanelBoot from '../components/PanelBoot.astro';
           const { note, back } = locatedChange(city, c, km);
           setCity(c, note, back);
         },
-        (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${titleCase(city.name)}.`, { label: 'Pilih kota', run: cityDialog.open }),
+        (e: Error) => setStatus(`${e.message}. Jadwal tetap untuk ${placeName(city)}.`, { label: 'Pilih kota', run: cityDialog.open }),
       );
     }
 
@@ -357,9 +356,9 @@ import PanelBoot from '../components/PanelBoot.astro';
       }, 4000);
     }
     $('share').addEventListener('click', async () => {
-      const url = `${location.origin}${location.pathname}?kota=${city.id}`;
+      const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
       try {
-        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${titleCase(city.name)}`, url });
+        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeName(city)}`, url });
         else {
           await navigator.clipboard.writeText(url);
           flash('Tautan disalin.');
@@ -369,7 +368,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       }
     });
 
-    $('city-name').textContent = titleCase(city.name);
+    $('city-name').textContent = placeName(city);
     sourceSelect.value = preferred;
     refresh();
     setInterval(tick, 1000);

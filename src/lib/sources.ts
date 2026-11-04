@@ -1,5 +1,5 @@
-import { TIMES, type DaySchedule, type TimeName } from './schedule';
-import type { City } from './cities';
+import { TIMES, ZONE_LABEL, type DaySchedule, type TimeName } from './schedule';
+import type { Place } from './cities';
 
 export type SourceId = 'myquran' | 'aladhan';
 export type Source = {
@@ -9,9 +9,14 @@ export type Source = {
   /** The credit line under the times. */
   credit: string;
   label: string;
-  url(city: City, year: number, month: number): string;
+  /** Whether this source has times for the place. */
+  covers(place: Place): boolean;
+  url(place: Place, year: number, month: number): string;
   parse(json: unknown): DaySchedule[];
 };
+
+/** Kemenag's angles apply to the kab/kota and to anywhere in an Indonesian zone (a Spot at sea off Indonesia). */
+const isKemenag = (place: Place) => place.kind === 'city' || Object.hasOwn(ZONE_LABEL, place.tz);
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -35,7 +40,8 @@ export const myquran: Source = {
   name: 'myQuran',
   credit: 'myQuran (Kemenag)',
   label: 'myQuran · jadwal resmi Kemenag',
-  url: (city, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${city.id}/${year}/${pad(month)}`,
+  covers: (place) => place.kind === 'city',
+  url: (place, year, month) => `https://api.myquran.com/v2/sholat/jadwal/${place.id}/${year}/${pad(month)}`,
   parse(json) {
     const jadwal = (json as { data?: { jadwal?: Record<string, unknown>[] } })?.data?.jadwal;
     if (!Array.isArray(jadwal)) throw new Error('myQuran: no jadwal');
@@ -44,15 +50,20 @@ export const myquran: Source = {
   },
 };
 
-/** Calculated with Kemenag angles (method 20), without Kemenag's ihtiyat, so 2–4 min earlier. */
+/**
+ * Calculated, anywhere. In Indonesia it uses Kemenag angles (method 20) without Kemenag's ihtiyat, so 2–4 min earlier.
+ * Elsewhere it uses the Muslim World League (method 3), with angle-based adjustment because the sun barely sets in high latitudes.
+ */
 export const aladhan: Source = {
   id: 'aladhan',
   name: 'Aladhan',
   credit: 'Aladhan',
   label: 'Aladhan · hitungan, bisa 2–4 menit lebih awal',
-  url: (city, year, month) =>
-    `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${city.lat}&longitude=${city.lon}` +
-    `&method=20&timezonestring=${city.tz}`,
+  covers: () => true,
+  url: (place, year, month) =>
+    `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${place.lat}&longitude=${place.lon}` +
+    (isKemenag(place) ? '&method=20' : '&method=3&latitudeAdjustmentMethod=3') +
+    `&timezonestring=${place.tz}`,
   parse(json) {
     type Day = { timings: Record<string, unknown>; date: { gregorian: { date: string } } };
     const data = (json as { data?: Day[] })?.data;
@@ -71,3 +82,7 @@ export const aladhan: Source = {
 };
 
 export const SOURCES: Record<SourceId, Source> = { myquran, aladhan };
+
+/** The sources that can serve the place, the preferred one first. */
+export const sourcesFor = (place: Place, preferred: SourceId): Source[] =>
+  [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)].filter((s) => s.covers(place));

@@ -6,9 +6,22 @@
  * script will: a shared ?kota= link first, then the saved bedug:city, else the default.
  */
 
-/** The place for the first of the link's and the saved city id that `cfg.cities` ({ id: [name, tz] }) knows, else the default. */
+/** The place a `geo:<lat>,<lon>@<tz>` id names, or null; mirrors placeById in cities.ts. */
+function spotOf(id) {
+  var m = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)@([\w+\/-]+)$/.exec(id);
+  if (!m || Math.abs(m[1]) > 90 || Math.abs(m[2]) > 180) return null;
+  try {
+    return { id: id, name: 'Lokasi Anda', tz: new Intl.DateTimeFormat('en', { timeZone: m[3] }).resolvedOptions().timeZone };
+  } catch (e) {
+    return null;
+  }
+}
+
+/** The place for the first of the link's and the saved id that is a `geo:` spot or that `cfg.cities` ({ id: [name, tz] }) knows, else the default. */
 function resolvePlace(ids, cfg) {
   for (var k = 0; k < ids.length; k++) {
+    var spot = ids[k] && ids[k].indexOf('geo:') === 0 && spotOf(ids[k]);
+    if (spot) return spot;
     var c = ids[k] && Object.prototype.hasOwnProperty.call(cfg.cities, ids[k]) && cfg.cities[ids[k]];
     if (c) return { id: ids[k], name: c[0], tz: c[1] };
   }

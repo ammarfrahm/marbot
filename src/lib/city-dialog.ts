@@ -1,5 +1,5 @@
 import { geoReason } from './geo';
-import { cityLabel, matchCities, matchHint, nearestCity, titleCase, type City } from './cities';
+import { cityLabel, matchCities, matchHint, nearestCity, placeName, titleCase, type City, type Place } from './cities';
 
 /** The nearest kab/kota to the device; rejects with a short reason ("Izin lokasi ditolak"). */
 export function locateNearest(): Promise<{ city: City; km: number }> {
@@ -18,14 +18,14 @@ export const farNote = (city: City, km: number) =>
   km > 150 ? `Kota terdekat ${titleCase(city.name)} berjarak ${Math.round(km)} km, jadwal mungkin tidak akurat.` : '';
 
 /** What a geolocation pick says: the distance warning if far, else the choice; `back` is the city to return to, unless nothing changed. */
-export function locatedChange(prev: City, city: City, km: number): { note: string; back?: City } {
+export function locatedChange(prev: Place, city: City, km: number): { note: string; back?: Place } {
   return { note: farNote(city, km) || `Lokasi Anda: ${titleCase(city.name)}.`, back: prev.id === city.id ? undefined : prev };
 }
 
 type Options = {
-  current: () => City;
+  current: () => Place;
   /** Called with the chosen city; `back` is set when a location fix replaced another city. */
-  pick: (city: City, note?: string, back?: City) => void;
+  pick: (city: Place, note?: string, back?: Place) => void;
 };
 
 /** Wires the shared #settings dialog and every [data-open-city] button on the page. */
@@ -61,10 +61,10 @@ export function initCityDialog({ current, pick }: Options) {
     announceEl.textContent = '';
     setTimeout(() => (announceEl.textContent = text), 100);
   }
-  function choose(city: City, note = '', back?: City) {
+  function choose(city: Place, note = '', back?: Place) {
     pick(city, note, back);
     dialog.close();
-    announce(`Kota diganti ke ${titleCase(city.name)}.`);
+    announce(`Kota diganti ke ${placeName(city)}.`);
   }
 
   /** Picks what is typed if it is one city; otherwise says why not and keeps the dialog open. */

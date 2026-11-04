@@ -1,11 +1,14 @@
 import data from '../data/cities.json';
 
 /** A myQuran kab/kota: `id` is myQuran's city id, `lat`/`lon` from OpenStreetMap, `tz` its IANA zone. */
-export type City = { id: string; name: string; region: string; lat: number; lon: number; tz: string };
+export type City = { kind: 'city'; id: string; name: string; region: string; lat: number; lon: number; tz: string };
+/** A located point outside the kab/kota list (a traveller abroad). Its id carries everything: `geo:<lat>,<lon>@<tz>`. */
+export type Spot = { kind: 'spot'; id: string; name: string; region: string; lat: number; lon: number; tz: string };
+export type Place = City | Spot;
 
 // Indonesia has no DST, so the data file keeps the UTC offset: WIB 7, WITA 8, WIT 9.
 const ZONE_OF_OFFSET: Record<number, string> = { 7: 'Asia/Jakarta', 8: 'Asia/Makassar', 9: 'Asia/Jayapura' };
-export const CITIES: City[] = (data as (Omit<City, 'tz'> & { utcOffset: number })[]).map(({ utcOffset, ...c }) => ({ ...c, tz: ZONE_OF_OFFSET[utcOffset] }));
+export const CITIES: City[] = (data as (Omit<City, 'kind' | 'tz'> & { utcOffset: number })[]).map(({ utcOffset, ...c }) => ({ ...c, kind: 'city', tz: ZONE_OF_OFFSET[utcOffset] }));
 export const DEFAULT_CITY_ID = '1301'; // KOTA JAKARTA
 
 /** "KAB. BANDUNG BARAT" → "Kab. Bandung Barat"; acronyms stay: "DKI JAKARTA" → "DKI Jakarta" */
@@ -15,6 +18,40 @@ export const titleCase = (s: string) =>
 export function cityById(id: string | null): City | undefined {
   return CITIES.find((c) => c.id === id);
 }
+
+const GEO_ID = /^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)@([\w+/-]+)$/;
+
+/** The accepted spelling of a time zone, or undefined when Intl does not know it. */
+function knownZone(tz: string): string | undefined {
+  try {
+    return new Intl.DateTimeFormat('en', { timeZone: tz }).resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+}
+
+/** A Spot at these coordinates, rounded to 2 decimals (about 1 km, so GPS jitter keeps one cache key). */
+export function spotAt(lat: number, lon: number, tz: string): Spot {
+  const [la, lo] = [lat, lon].map((n) => +n.toFixed(2)); // `+` turns "-0.00" into 0
+  return { kind: 'spot', id: `geo:${la},${lo}@${tz}`, name: 'Lokasi Anda', region: tz.split('/').pop()!.replaceAll('_', ' '), lat: la, lon: lo, tz };
+}
+
+/** The Spot a `geo:` id names, or undefined when it is malformed or out of range: a link is untrusted input. */
+function parseSpot(id: string): Spot | undefined {
+  const m = GEO_ID.exec(id);
+  if (!m) return undefined;
+  const [lat, lon] = [Number(m[1]), Number(m[2])];
+  const tz = knownZone(m[3]);
+  return tz && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? spotAt(lat, lon, tz) : undefined;
+}
+
+/** The place a saved or linked id means: a kab/kota id, or a `geo:` id. */
+export function placeById(id: string | null): Place | undefined {
+  return id?.startsWith('geo:') ? parseSpot(id) : cityById(id);
+}
+
+/** What the page calls a place: "Kota Bandung", or "Lokasi Anda". */
+export const placeName = (p: Place) => (p.kind === 'city' ? titleCase(p.name) : p.name);
 
 export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
@@ -36,7 +73,7 @@ export function nearestCity(lat: number, lon: number): { city: City; km: number 
 }
 
 /** Picker label: the province tells "Kab. Bandung" from "Kab. Bandung Barat" at a glance. */
-export const cityLabel = (c: City) => `${titleCase(c.name)}, ${titleCase(c.region)}`;
+export const cityLabel = (p: Place) => (p.kind === 'city' ? `${titleCase(p.name)}, ${titleCase(p.region)}` : `Lokasi Anda (sekitar ${p.region})`);
 
 /**
  * What a typed name could mean, best match first. The first tier with any hit wins:
@@ -76,4 +113,4 @@ export function matchHint(hits: City[], locate = true): string {
 }
 
 /** A city from a shared link is offered for saving, unless it is already the saved one. */
-export const offerLinked = (linked: City | undefined, stored: City | undefined) => !!linked && linked.id !== stored?.id;
+export const offerLinked = (linked: Place | undefined, stored: Place | undefined) => !!linked && linked.id !== stored?.id;
