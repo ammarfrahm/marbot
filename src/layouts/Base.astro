@@ -76,8 +76,10 @@ const TABS: { id: Tab; href: string; icon: string }[] = [
       const link = document.querySelector<HTMLAnchorElement>('a.lang');
       link?.addEventListener('click', () => {
         link.search = location.search;
+        // Indonesian removes the key: that needs no quota, so it sticks even when storage is full of month caches.
         try {
-          localStorage.setItem('bedug:lang', link.dataset.lang!);
+          if (link.dataset.lang === 'en') localStorage.setItem('bedug:lang', 'en');
+          else localStorage.removeItem('bedug:lang');
         } catch {}
       });
       if (import.meta.env.PROD && 'serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
