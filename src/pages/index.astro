@@ -57,7 +57,7 @@ import PanelBoot from '../components/PanelBoot.astro';
   <script>
     import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
     import {
-      formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, toInstant, zoneLabel, type DaySchedule, type TimeName,
+      formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, rowInstant, zoneLabel, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
     import { creditFor, SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
@@ -263,7 +263,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         li.classList.toggle('next', current);
         if (current) li.setAttribute('aria-current', 'time');
         else li.removeAttribute('aria-current');
-        li.classList.toggle('past', !!listed && toInstant(listDate, listed[t], city.tz) <= now);
+        li.classList.toggle('past', !!listed && rowInstant(listed, t, city.tz) <= now);
       }
 
       if (arrived) {

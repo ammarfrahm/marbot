@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysWhileLoading, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, toInstant, zoneLabel, type DaySchedule } from '../src/lib/schedule';
+import { daysWhileLoading, formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, rowInstant, toInstant, zoneLabel, type DaySchedule } from '../src/lib/schedule';
 
 const day = (date: string, over: Partial<DaySchedule> = {}): DaySchedule => ({
   date, imsak: '03:58', subuh: '04:08', terbit: '05:23', dzuhur: '11:40',
@@ -92,6 +92,26 @@ describe('nextPrayer', () => {
     const next = nextPrayer([day('2026-11-03')], at('2026-11-03T11:00:00+08:00'), WITA)!;
     expect(next.name).toBe('dzuhur');
     expect(next.at - at('2026-11-03T11:00:00+08:00')).toBe(40 * 60_000);
+  });
+});
+
+describe('prayers after midnight', () => {
+  // Oslo in June (Aladhan, MWL, angle-based): Isya is listed in the row of the day it follows, but falls just after midnight.
+  const oslo = 'Europe/Oslo';
+  const days = [
+    day('2026-06-21', { subuh: '02:21', dzuhur: '13:20', ashar: '17:30', maghrib: '22:50', isya: '00:12' }),
+    day('2026-06-22', { subuh: '02:21', dzuhur: '13:20', ashar: '17:30', maghrib: '22:50', isya: '00:12' }),
+  ];
+  it('puts Isya at 00:12 the same night, in the next calendar day', () => {
+    expect(nextPrayer(days, at('2026-06-21T23:30:00+02:00'), oslo)).toMatchObject({ name: 'isya', date: '2026-06-21', at: at('2026-06-22T00:12:00+02:00') });
+  });
+  it('then Subuh follows that Isya', () => {
+    const now = at('2026-06-22T00:30:00+02:00');
+    expect(lastPrayer(days, now, oslo)).toMatchObject({ name: 'isya', at: at('2026-06-22T00:12:00+02:00') });
+    expect(nextPrayer(days, now, oslo)).toMatchObject({ name: 'subuh', date: '2026-06-22', time: '02:21' });
+  });
+  it('leaves a row whose Isya is in the evening alone', () => {
+    expect(rowInstant(day('2026-11-03'), 'isya', WIB)).toBe(at('2026-11-03T19:01:00+07:00'));
   });
 });
 

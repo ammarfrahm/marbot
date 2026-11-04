@@ -52,12 +52,21 @@ export function toInstant(date: string, hhmm: string, tz: string): number {
   return wall - offsetAt(first, tz);
 }
 
+/**
+ * The instant of one of a row's times. Far from the equator Maghrib and Isya can pass midnight yet sit in the day's own row
+ * (Oslo in June: Isya 00:11), so one earlier than the row's Dzuhur belongs to the next calendar day.
+ */
+export function rowInstant(day: DaySchedule, name: TimeName, tz: string): number {
+  const late = (name === 'maghrib' || name === 'isya') && day[name] < day.dzuhur;
+  return toInstant(late ? placeDate(Date.parse(`${day.date}T12:00:00Z`), 'UTC', 1) : day.date, day[name], tz);
+}
+
 export type PrayerTime = { name: PrayerName; date: string; time: string; at: number };
 
 /** Every prayer in `days`, in time order. */
 function prayerTimes(days: DaySchedule[], tz: string): PrayerTime[] {
   return days
-    .flatMap((day) => PRAYERS.map((name) => ({ name, date: day.date, time: day[name], at: toInstant(day.date, day[name], tz) })))
+    .flatMap((day) => PRAYERS.map((name) => ({ name, date: day.date, time: day[name], at: rowInstant(day, name, tz) })))
     .sort((a, b) => a.at - b.at);
 }
 
