@@ -321,4 +321,4 @@ const en: Strings = {
 export const STRINGS: Record<Lang, Strings> = { id, en };
 
 /** The page's language, from <html lang>; Indonesian when it is anything else. */
-export const pageLang = (): Lang => (Object.hasOwn(STRINGS, document.documentElement.lang) ? (document.documentElement.lang as Lang) : 'id');
+export const pageLang = (): Lang => (document.documentElement.lang === 'en' ? 'en' : 'id');
