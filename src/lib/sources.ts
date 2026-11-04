@@ -16,7 +16,7 @@ export type Source = {
 };
 
 /** Kemenag's angles apply to the kab/kota and to anywhere in an Indonesian zone (a Spot at sea off Indonesia). */
-const isKemenag = (place: Place) => place.kind === 'city' || Object.hasOwn(ZONE_LABEL, place.tz);
+export const isKemenag = (place: Place) => place.kind === 'city' || Object.hasOwn(ZONE_LABEL, place.tz);
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -86,3 +86,9 @@ export const SOURCES: Record<SourceId, Source> = { myquran, aladhan };
 /** The sources that can serve the place, the preferred one first. */
 export const sourcesFor = (place: Place, preferred: SourceId): Source[] =>
   [SOURCES[preferred], ...Object.values(SOURCES).filter((s) => s.id !== preferred)].filter((s) => s.covers(place));
+
+/** The line under the times: who made them, and for a located place that they are calculated, not Kemenag's. */
+export const creditFor = (place: Place, source: Source) =>
+  place.kind === 'city'
+    ? `Sumber: ${source.credit}`
+    : `Dihitung dari lokasi Anda (Aladhan, metode ${isKemenag(place) ? 'Kemenag' : 'MWL'}). Bukan jadwal Kemenag.`;

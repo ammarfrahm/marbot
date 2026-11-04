@@ -55,12 +55,12 @@ import PanelBoot from '../components/PanelBoot.astro';
     <noscript><p>Marbot butuh JavaScript untuk menampilkan jadwal.</p></noscript>
 
   <script>
-    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, type Place } from '../lib/cities';
+    import { cityById, DEFAULT_CITY_ID, offerLinked, placeById, placeName, placeWhere, type Place } from '../lib/cities';
     import {
       formatCountdown, lastPrayer, mergeMonths, nextPrayer, parseCachedMonth, placeClock, placeDate, capitalise, daysWhileLoading, toInstant, zoneLabel, type DaySchedule, type TimeName,
     } from '../lib/schedule';
     import { formatHijri, toHijri } from '../lib/hijri';
-    import { SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
+    import { creditFor, SOURCES, sourcesFor, type Source, type SourceId } from '../lib/sources';
     import { $, setText } from '../lib/dom';
     import { saveCity, savedCity, store, storeKey } from '../lib/store';
     import { initCityDialog, locatedChange, locateNearest } from '../lib/city-dialog';
@@ -76,7 +76,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     let cityNote = ''; // e.g. a distance warning after locating; kept until the city changes
     let cityAction: { label: string; run: () => void } | undefined;
     if (linked && offerLinked(linked, stored)) {
-      cityNote = `Jadwal ${linked.kind === 'city' ? placeName(linked) : `sekitar ${linked.region}`} dari tautan.`;
+      cityNote = `Jadwal ${placeWhere(linked)} dari tautan.`;
       cityAction = {
         label: 'Simpan sebagai kota saya',
         run: () => {
@@ -189,7 +189,7 @@ import PanelBoot from '../components/PanelBoot.astro';
         if (toSave === city.id) saveCity(city);
         toSave = null;
         const used = merged.today.source;
-        setText('source-note', `Sumber: ${used.credit}`);
+        setText('source-note', creditFor(city, used));
         const noTomorrow = !days.some((d) => d.date === wanted[2]);
         retry = noTomorrow ? (navigator.onLine ? 'Jadwal besok belum bisa dimuat, dicoba lagi tiap menit.' : 'Jadwal besok belum tersimpan, sambungkan internet sebentar.') : '';
         if (used.id !== sourcesFor(city, preferred)[0].id) setStatus(`${sourcesFor(city, preferred)[0].name} tidak bisa dipakai, jadwal dari ${used.name}.${retry && ` ${retry}`}`);
@@ -312,6 +312,7 @@ import PanelBoot from '../components/PanelBoot.astro';
       retry = '';
       cityAction = back && { label: `Kembali ke ${placeName(back)}`, run: () => setCity(back, '', undefined, heldNow) };
       $('city-name').textContent = placeName(c);
+      syncSource();
       toSave = persist ? c.id : null;
       history.replaceState(null, '', persist ? `?kota=${encodeURIComponent(c.id)}` : location.pathname);
       quietStatus();
@@ -330,6 +331,11 @@ import PanelBoot from '../components/PanelBoot.astro';
       );
     }
 
+    /** A located place has one source, so the choice is shown as Aladhan and cannot be changed until a kab/kota is picked. */
+    function syncSource() {
+      sourceSelect.value = sourcesFor(city, preferred)[0].id;
+      sourceSelect.disabled = city.kind === 'spot';
+    }
     const cityDialog = initCityDialog({ current: () => city, pick: setCity });
     sourceSelect.addEventListener('change', () => {
       preferred = sourceSelect.value as SourceId;
@@ -358,7 +364,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${encodeURIComponent(city.id)}`;
       try {
-        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeName(city)}`, url });
+        if (navigator.share) await navigator.share({ title: `Jadwal sholat ${placeWhere(city)}`, url });
         else {
           await navigator.clipboard.writeText(url);
           flash('Tautan disalin.');
@@ -369,7 +375,7 @@ import PanelBoot from '../components/PanelBoot.astro';
     });
 
     $('city-name').textContent = placeName(city);
-    sourceSelect.value = preferred;
+    syncSource();
     refresh();
     setInterval(tick, 1000);
   </script>

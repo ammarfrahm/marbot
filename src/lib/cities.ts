@@ -53,6 +53,9 @@ export function placeById(id: string | null): Place | undefined {
 /** What the page calls a place: "Kota Bandung", or "Lokasi Anda". */
 export const placeName = (p: Place) => (p.kind === 'city' ? titleCase(p.name) : p.name);
 
+/** Where a place is, for a sentence about someone else's view of it: "Kota Bandung", "sekitar London". */
+export const placeWhere = (p: Place) => (p.kind === 'city' ? placeName(p) : `sekitar ${p.region}`);
+
 export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const rad = Math.PI / 180;
   const h =

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aladhan, myquran, sourcesFor } from '../src/lib/sources';
+import { aladhan, creditFor, myquran, sourcesFor } from '../src/lib/sources';
 import { placeById } from '../src/lib/cities';
 import myquranMonth from './fixtures/myquran-1301-2026-11.json';
 import aladhanMonth from './fixtures/aladhan-jakarta-2026-11.json';
@@ -58,5 +58,10 @@ describe('places', () => {
     expect(sourcesFor(jakarta, 'aladhan').map((s) => s.id)).toEqual(['aladhan', 'myquran']);
     expect(sourcesFor(jakarta, 'myquran').map((s) => s.id)).toEqual(['myquran', 'aladhan']);
     expect(sourcesFor(london, 'myquran').map((s) => s.id)).toEqual(['aladhan']);
+  });
+  it('says a located place is calculated, not Kemenag', () => {
+    expect(creditFor(jakarta, myquran)).toBe('Sumber: myQuran (Kemenag)');
+    expect(creditFor(london, aladhan)).toBe('Dihitung dari lokasi Anda (Aladhan, metode MWL). Bukan jadwal Kemenag.');
+    expect(creditFor(offJava, aladhan)).toContain('metode Kemenag');
   });
 });
