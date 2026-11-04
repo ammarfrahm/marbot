@@ -340,16 +340,23 @@ import PanelBoot from '../components/PanelBoot.astro';
     });
     addEventListener('online', () => (loadFailed || partial) && refresh());
     $('status-action').addEventListener('click', () => statusAction?.());
+    /** A short message that gives the status back, with its action, unless something newer replaced it. */
+    function flash(msg: string) {
+      const prev = $('status-text').textContent ?? '';
+      const prevAction = $('status-action').hidden ? undefined : { label: $('status-action').textContent ?? '', run: statusAction! };
+      setStatus(msg);
+      setTimeout(() => $('status-text').textContent === msg && setStatus(prev, prevAction), 4000);
+    }
     $('share').addEventListener('click', async () => {
       const url = `${location.origin}${location.pathname}?kota=${city.id}`;
       try {
         if (navigator.share) await navigator.share({ title: `Jadwal sholat ${titleCase(city.name)}`, url });
         else {
           await navigator.clipboard.writeText(url);
-          setStatus('Tautan disalin.');
+          flash('Tautan disalin.');
         }
       } catch (e) {
-        if ((e as Error).name !== 'AbortError') setStatus('Tautan tidak bisa dibagikan.');
+        if ((e as Error).name !== 'AbortError') flash('Tautan tidak bisa dibagikan.');
       }
     });
 
